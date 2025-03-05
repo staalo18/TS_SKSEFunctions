@@ -52,8 +52,43 @@ namespace _ts_SKSEFunctions {
 	}
 	
 /******************************************************************************************/
-	
-	RE::TESCondition* condition_isPlayerInRegion;
+
+	void SendCustomEvent(std::string eventName, std::string result, float numArg, RE::TESObjectREFR* sender) {
+		auto* args = RE::MakeFunctionArguments(std::string(eventName), std::string(result), float(numArg), (RE::TESObjectREFR*)sender);
+		auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+		if (vm) {
+			vm->SendEventAll("OnCustomEvent", args);
+		}
+	}
+
+/******************************************************************************************/
+
+	bool CheckForPackage(RE::Actor* akActor, const RE::BGSListForm* Packagelist, RE::TESPackage* CheckPackage) {
+		if (!akActor) {
+			spdlog::error("_ts_SKSEFunctions - {}: error, akActor doesn't exist", __func__);
+			return false;
+		}
+
+		if (!Packagelist) {
+			return false;
+		}
+
+		if (!CheckPackage) {
+			CheckPackage = akActor->GetCurrentPackage();
+		}
+
+		for (auto& form : Packagelist->forms) {
+			if (form && form->As<RE::TESPackage>() == CheckPackage) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+/******************************************************************************************/
+
+	RE::TESCondition* condition_IsPlayerInRegion;
 	bool IsPlayerInRegion(const std::string& regionName) {
 	
 		auto player = RE::PlayerCharacter::GetSingleton();
@@ -63,14 +98,14 @@ namespace _ts_SKSEFunctions {
 			return false;
 		}
 	
-		if (!condition_isPlayerInRegion) {
-			spdlog::info("_ts_SKSEFunctions - {}: creating condition_isPlayerInBorderRegion condition", __func__);
+		if (!condition_IsPlayerInRegion) {
+			spdlog::info("_ts_SKSEFunctions - {}: creating IsPlayerInBorderRegion condition", __func__);
 			auto* conditionItem = new RE::TESConditionItem;
 		   
 			conditionItem->data.comparisonValue.f = 1.0f;
 			conditionItem->data.functionData.function = RE::FUNCTION_DATA::FunctionID::kIsPlayerInRegion;
-			condition_isPlayerInRegion = new RE::TESCondition;
-			condition_isPlayerInRegion->head = conditionItem;
+			condition_IsPlayerInRegion = new RE::TESCondition;
+			condition_IsPlayerInRegion->head = conditionItem;
 		}
 	
 		auto* regionForm =  RE::TESForm::LookupByEditorID(regionName);
@@ -78,9 +113,9 @@ namespace _ts_SKSEFunctions {
 			spdlog::error("_ts_SKSEFunctions - {}: Failed to lookup region form {}", __func__, regionName);
 			return false;
 		}
-		condition_isPlayerInRegion->head->data.functionData.params[0] = regionForm;
+		condition_IsPlayerInRegion->head->data.functionData.params[0] = regionForm;
 	
-		return condition_isPlayerInRegion->IsTrue(player, nullptr);
+		return condition_IsPlayerInRegion->IsTrue(player, nullptr);
 	}
 	
 /******************************************************************************************/
@@ -93,7 +128,7 @@ namespace _ts_SKSEFunctions {
 		}
 
 		if (!condition_IsFlyingMountPatrolQueued) {
-			spdlog::info("_ts_SKSEFunctions - {}: creating condition_IsFlyingMountPatrolQueued condition", __func__);
+			spdlog::info("_ts_SKSEFunctions - {}: creating IsFlyingMountPatrolQueued condition", __func__);
 			auto* conditionItem = new RE::TESConditionItem;
 			conditionItem->data.comparisonValue.f = 1.0f;
 			conditionItem->data.functionData.function = RE::FUNCTION_DATA::FunctionID::kIsFlyingMountPatrolQueued;
@@ -115,7 +150,7 @@ namespace _ts_SKSEFunctions {
 		}
 
 		if (!condition_IsFlyingMountFastTravelling) {
-			spdlog::info("_ts_SKSEFunctions - {}: creating condition_IsFlyingMountFastTravelling condition", __func__);
+			spdlog::info("_ts_SKSEFunctions - {}: creating IsFlyingMountFastTravelling condition", __func__);
 			auto* conditionItem = new RE::TESConditionItem;
 			conditionItem->data.comparisonValue.f = 1.0f;
 			conditionItem->data.functionData.function = RE::FUNCTION_DATA::FunctionID::kIsFlyingMountFastTravelling;
@@ -230,4 +265,14 @@ namespace _ts_SKSEFunctions {
 
 		return result;
 	}
+
+	// Global variable to store the main thread ID
+	std::thread::id mainThreadId;
+
+	// Function to set the main thread ID
+	void SetMainThread() {
+		mainThreadId = std::this_thread::get_id();
+	}
 }
+
+
