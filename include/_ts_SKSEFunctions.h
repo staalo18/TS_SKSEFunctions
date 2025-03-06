@@ -44,6 +44,72 @@ namespace _ts_SKSEFunctions {
 		return false;
     }
 
+	template <typename T>
+	bool UpdateIniSetting(const std::string& settingName, T value) {
+		auto* settingCollection = RE::INISettingCollection::GetSingleton();
+		RE::Setting* setting = settingCollection->GetSetting(settingName.c_str());
+		if (!setting) {
+			log::error("_ts_SKSEFunctions - {}: Failed to get INI variable: {}", __func__, settingName);
+			return false;
+		}
+
+		switch (setting->GetType()) {
+			case RE::Setting::Type::kBool:
+				if constexpr (std::is_same_v<T, bool>) {
+					setting->data.b = value;
+				} else {
+					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					return false;
+				}
+				break;
+			case RE::Setting::Type::kFloat:
+				if constexpr (std::is_same_v<T, float>) {
+					setting->data.f = value;
+				} else {
+					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					return false;
+				}
+				break;
+			case RE::Setting::Type::kSignedInteger:
+				if constexpr (std::is_same_v<T, std::int32_t>) {
+					setting->data.i = value;
+				} else {
+					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					return false;
+				}
+				break;
+			case RE::Setting::Type::kColor:
+				if constexpr (std::is_same_v<T, RE::Color>) {
+					setting->data.r = value;
+				} else {
+					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					return false;
+				}
+				break;
+			case RE::Setting::Type::kString:
+				if constexpr (std::is_same_v<T, const char*>) {
+					setting->data.s = const_cast<char*>(value);
+				} else {
+					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					return false;
+				}
+				break;
+			case RE::Setting::Type::kUnsignedInteger:
+				if constexpr (std::is_same_v<T, std::uint32_t>) {
+					setting->data.u = value;
+				} else {
+					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					return false;
+				}
+				break;
+			default:
+				log::error("_ts_SKSEFunctions - {}: Unknown type for INI variable: {}", __func__, settingName);
+				return false;
+		}
+	return true;
+	}
+
+
     // Global variable to store the main thread ID
     extern std::thread::id mainThreadId;
 
@@ -54,6 +120,7 @@ namespace _ts_SKSEFunctions {
 	auto ExecuteOnMainThread(Func&& func, Args&&... args) -> decltype(func(std::forward<Args>(args)...)) {
 		using ReturnType = decltype(func(std::forward<Args>(args)...));
 		if (std::this_thread::get_id() == mainThreadId) {
+			log::info("_ts_SKSEFunctions - {}: Executing function on main thread", __func__);
 			// If called from the main thread, execute the function directly
 			if constexpr (std::is_void_v<ReturnType>) {
 				func(std::forward<Args>(args)...);
@@ -61,6 +128,7 @@ namespace _ts_SKSEFunctions {
 				return func(std::forward<Args>(args)...);
 			}
 		} else {
+			log::info("_ts_SKSEFunctions - {}: Executing function on task interface", __func__);
         // If not called from the main thread, use SKSE::GetTaskInterface()->AddTask
 			if constexpr (std::is_void_v<ReturnType>) {
 				auto promise = std::make_shared<std::promise<void>>();
