@@ -1,3 +1,4 @@
+#include "SKSE/logger.h"
 #include "_ts_SKSEFunctions.h"
 
 namespace _ts_SKSEFunctions {
@@ -264,14 +265,6 @@ namespace _ts_SKSEFunctions {
 		}
 
 		return result;
-	}
-
-	// Global variable to store the main thread ID
-	std::thread::id mainThreadId;
-
-	// Function to set the main thread ID
-	void SetMainThread() {
-		mainThreadId = std::this_thread::get_id();
 	}
 }
 

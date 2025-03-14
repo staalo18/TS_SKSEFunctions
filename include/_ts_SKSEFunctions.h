@@ -31,8 +31,11 @@ namespace _ts_SKSEFunctions {
 
     std::vector<RE::Actor*> GetCombatMembers(const RE::Actor* a_actor);
 
+	// call a global papyrus function from C++
     template <class ... Args>
 	bool CallPapyrusFunction(std::string_view functionClass, std::string_view function, Args... a_args) {
+		// example usage:
+		// _ts_SKSEFunctions::CallPapyrusFunction("Game"sv, "FastTravel"sv, FastTravelTarget);
 		const auto skyrimVM = RE::SkyrimVM::GetSingleton();
 		auto vm = skyrimVM ? skyrimVM->impl : nullptr;
 		if (vm) {
@@ -44,12 +47,62 @@ namespace _ts_SKSEFunctions {
 		return false;
     }
 
+	using ObjectPtr = RE::BSTSmartPointer<RE::BSScript::Object>;
+
+	inline RE::VMHandle GetHandle(RE::TESForm* a_form) {
+		auto vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+		auto policy = vm->GetObjectHandlePolicy();
+		return policy->GetHandleForObject(a_form->GetFormType(), a_form);
+	}
+
+	inline ObjectPtr GetObjectPtr(RE::TESForm* a_form, const char* a_class, bool a_create) {
+		auto vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+		auto handle = GetHandle(a_form);
+
+		ObjectPtr object = nullptr;
+		bool found = vm->FindBoundObject(handle, a_class, object);
+		if (!found && a_create) {
+			vm->CreateObject2(a_class, object);
+			vm->BindObject(object, handle, false);
+		}
+
+		return object;
+	}	
+
+	// Call a papyrus function from a script that extends a form (actor, quest etc) from C++
+	template <class ... Args>
+	bool CallPapyrusFunctionOn(RE::TESForm* a_form, std::string_view formKind, std::string_view function, Args... a_args) {
+		// example usage:
+		// RE::TESQuest* RideQuest = ...;
+		// RE::TESActor* Player = ...;
+		// _ts_SKSEFunctions::CallPapyrusFunctionOn(RideQuest, "Quest", "MyPapyrusFunction", <papyrus function arg list>)
+		// _ts_SKSEFunctions::CallPapyrusFunctionOn(Player, "actor", "AnotherPapyrusFunction", <papyrus function arg list>)
+		const auto skyrimVM = RE::SkyrimVM::GetSingleton();
+		auto vm = skyrimVM ? skyrimVM->impl : nullptr;
+		if (vm) {
+			RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
+			auto args = RE::MakeFunctionArguments(std::forward<Args>(a_args)...);
+			auto objectPtr = GetObjectPtr(a_form, std::string(formKind).c_str(), false);
+			if (!objectPtr) {
+				spdlog::error("_ts_SKSEFunctions - {}: Could not bind form", __func__);
+				return false;
+			}
+			bool bDispatch = vm->DispatchMethodCall1(objectPtr, std::string(function).c_str(), args, callback);
+			if (!bDispatch) {
+				spdlog::error("_ts_SKSEFunctions - {}: Could not dispatch method call", __func__);
+			}
+			return bDispatch;
+		}
+		return false;
+	}
+
+
 	template <typename T>
 	bool UpdateIniSetting(const std::string& settingName, T value) {
 		auto* settingCollection = RE::INISettingCollection::GetSingleton();
 		RE::Setting* setting = settingCollection->GetSetting(settingName.c_str());
 		if (!setting) {
-			log::error("_ts_SKSEFunctions - {}: Failed to get INI variable: {}", __func__, settingName);
+			spdlog::error("_ts_SKSEFunctions - {}: Failed to get INI variable: {}", __func__, settingName);
 			return false;
 		}
 
@@ -58,7 +111,7 @@ namespace _ts_SKSEFunctions {
 				if constexpr (std::is_same_v<T, bool>) {
 					setting->data.b = value;
 				} else {
-					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
 					return false;
 				}
 				break;
@@ -66,7 +119,7 @@ namespace _ts_SKSEFunctions {
 				if constexpr (std::is_same_v<T, float>) {
 					setting->data.f = value;
 				} else {
-					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
 					return false;
 				}
 				break;
@@ -74,7 +127,7 @@ namespace _ts_SKSEFunctions {
 				if constexpr (std::is_same_v<T, std::int32_t>) {
 					setting->data.i = value;
 				} else {
-					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
 					return false;
 				}
 				break;
@@ -82,7 +135,7 @@ namespace _ts_SKSEFunctions {
 				if constexpr (std::is_same_v<T, RE::Color>) {
 					setting->data.r = value;
 				} else {
-					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
 					return false;
 				}
 				break;
@@ -90,7 +143,7 @@ namespace _ts_SKSEFunctions {
 				if constexpr (std::is_same_v<T, const char*>) {
 					setting->data.s = const_cast<char*>(value);
 				} else {
-					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
 					return false;
 				}
 				break;
@@ -98,29 +151,47 @@ namespace _ts_SKSEFunctions {
 				if constexpr (std::is_same_v<T, std::uint32_t>) {
 					setting->data.u = value;
 				} else {
-					log::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
 					return false;
 				}
 				break;
 			default:
-				log::error("_ts_SKSEFunctions - {}: Unknown type for INI variable: {}", __func__, settingName);
+			spdlog::error("_ts_SKSEFunctions - {}: Unknown type for INI variable: {}", __func__, settingName);
 				return false;
 		}
 	return true;
 	}
 
+	/* Execute a function on the main thread if called from a different thread
 
-    // Global variable to store the main thread ID
-    extern std::thread::id mainThreadId;
+		Example usage for a function that returns a value:
+				float fPosX = _ts_SKSEFunctions::ExecuteOnMainThread([](RE::PlayerCharacter* player) {
+					return player->GetPositionX();
+				}, player);
+		Example usage for a function that does not return a value:
+				_ts_SKSEFunctions::ExecuteOnMainThread([](RE::Actor* actor) {
+					actor->EvaluatePackage();
+				}, myActor);
 
-	// Function to set the main thread ID
-	void SetMainThread();
+		NOTE: Don't use this template function from one of Skyrim's Papyrus threads, 
+			when passing a function that returns a value! 
+			First of all, using the template is not needed anyways
+			because the function can be executed on the Papyrus thread directly.
 
+			Secondly, it that case will you will cause a deadlock, 
+			as the Papyrus thread will wait for the result of the function, 
+			which is executed on the main thread.
+
+	*/
 	template <typename Func, typename... Args>
 	auto ExecuteOnMainThread(Func&& func, Args&&... args) -> decltype(func(std::forward<Args>(args)...)) {
 		using ReturnType = decltype(func(std::forward<Args>(args)...));
+		auto currentThreadId = std::this_thread::get_id();
+    
+		/* Not yet implemented: check if the function is called from a Papyrus thread
+		   That will require obtaining the threadIDs for all Papyrus threads for comparison
 		if (std::this_thread::get_id() == mainThreadId) {
-			log::info("_ts_SKSEFunctions - {}: Executing function on main thread", __func__);
+			spdlog::info("_ts_SKSEFunctions - {}: Executing function on main thread", __func__);
 			// If called from the main thread, execute the function directly
 			if constexpr (std::is_void_v<ReturnType>) {
 				func(std::forward<Args>(args)...);
@@ -128,16 +199,21 @@ namespace _ts_SKSEFunctions {
 				return func(std::forward<Args>(args)...);
 			}
 		} else {
-			log::info("_ts_SKSEFunctions - {}: Executing function on task interface", __func__);
+			*/
+			spdlog::info("_ts_SKSEFunctions - {}: Executing function on task interface", __func__);
         // If not called from the main thread, use SKSE::GetTaskInterface()->AddTask
 			if constexpr (std::is_void_v<ReturnType>) {
-				auto promise = std::make_shared<std::promise<void>>();
-				auto future = promise->get_future();
-				SKSE::GetTaskInterface()->AddTask([func = std::forward<Func>(func), promise, args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+// commented out promise/future code, as it is not needed for void functions
+// and will cause delays in the execution, and deadlock in case called from a Papyrus thread
+
+//				auto promise = std::make_shared<std::promise<void>>();
+//				auto future = promise->get_future();
+//				SKSE::GetTaskInterface()->AddTask([func = std::forward<Func>(func), promise, args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+				SKSE::GetTaskInterface()->AddTask([func = std::forward<Func>(func), args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
 					std::apply(func, args);
-					promise->set_value();
+//					promise->set_value();
 				});
-				future.get();
+//				future.get();
 			} else {
 				auto promise = std::make_shared<std::promise<ReturnType>>();
 				auto future = promise->get_future();
@@ -146,6 +222,6 @@ namespace _ts_SKSEFunctions {
 				});
 				return future.get();
 			}
-		}
+//		}
 	}
 }
