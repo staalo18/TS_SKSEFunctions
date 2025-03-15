@@ -54,6 +54,57 @@ namespace _ts_SKSEFunctions {
 	
 /******************************************************************************************/
 
+	void SetAngle(RE::TESObjectREFR* a_ref, RE::NiPoint3 a_angle) {
+		a_ref->data.angle = a_angle;
+		a_ref->Update3DPosition(true);
+	}
+
+	void SetAngleX(RE::TESObjectREFR* a_ref, float a_angleX) {
+		auto Angle = a_ref->GetAngle();
+		Angle.x = a_angleX;
+		a_ref->data.angle = Angle;
+		a_ref->Update3DPosition(true);
+	}
+
+	void SetAngleY(RE::TESObjectREFR* a_ref, float a_angleY) {
+		auto Angle = a_ref->GetAngle();
+		Angle.y = a_angleY;
+		a_ref->data.angle = Angle;
+		a_ref->Update3DPosition(true);
+	}
+
+	void SetAngleZ(RE::TESObjectREFR* a_ref, float a_angleZ) {
+		auto Angle = a_ref->GetAngle();
+		Angle.z = a_angleZ;
+		a_ref->data.angle = Angle;
+		a_ref->Update3DPosition(true);
+	}
+
+/******************************************************************************************/
+
+	void SetLookAt(RE::Actor* actor, RE::TESObjectREFR* target) {
+		if (!actor || !target) {
+			return;
+		}
+
+		auto* high = actor->GetActorRuntimeData().currentProcess->high;
+		if (high) {
+			high->SetHeadtrackTarget(RE::HighProcessData::HEAD_TRACK_TYPE::kScript, target);
+		}
+	}
+
+	void ClearLookAt(RE::Actor* actor) {
+		if (!actor) {
+			return;
+		}
+		auto* high = actor->GetActorRuntimeData().currentProcess->high;
+		if (high) {
+			high->ClearHeadtrackTarget(RE::HighProcessData::HEAD_TRACK_TYPE::kScript, true);
+		}
+	}
+
+/******************************************************************************************/
+
 	void SendCustomEvent(std::string eventName, std::string result, float numArg, RE::TESObjectREFR* sender) {
 		auto* args = RE::MakeFunctionArguments(std::string(eventName), std::string(result), float(numArg), (RE::TESObjectREFR*)sender);
 		auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();

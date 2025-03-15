@@ -13,6 +13,18 @@ namespace _ts_SKSEFunctions {
 
     bool IsFormValid(RE::TESForm* form, bool checkDeleted = true);
 
+	void SetAngle(RE::TESObjectREFR* a_ref, RE::NiPoint3 a_angle);
+
+	void SetAngleX(RE::TESObjectREFR* a_ref, float a_angleX);
+
+	void SetAngleY(RE::TESObjectREFR* a_ref, float a_angleY);
+
+	void SetAngleZ(RE::TESObjectREFR* a_ref, float a_angleZ);
+
+	void SetLookAt(RE::Actor* actor, RE::TESObjectREFR* target);
+
+	void ClearLookAt(RE::Actor* actor);
+
     void SendCustomEvent(std::string eventName, std::string result, float numArg, RE::TESObjectREFR* sender);
 
 	bool CheckForPackage(RE::Actor* akActor, const RE::BGSListForm* Packagelist, RE::TESPackage* CheckPackage = nullptr);
@@ -223,5 +235,12 @@ namespace _ts_SKSEFunctions {
 				return future.get();
 			}
 //		}
+	}
+
+	template <typename Func, typename... Args>
+	void SendToMainThread(Func&& func, Args&&... args) {
+		SKSE::GetTaskInterface()->AddTask([func = std::forward<Func>(func), args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+			std::apply(func, args);
+		});
 	}
 }
