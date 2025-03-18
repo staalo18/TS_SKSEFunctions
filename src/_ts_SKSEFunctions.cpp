@@ -82,7 +82,7 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	void SetLookAt(RE::Actor* actor, RE::TESObjectREFR* target) {
+	void SetLookAt(RE::Actor* actor, RE::TESObjectREFR* target, bool pathingLookAt) {
 		if (!actor || !target) {
 			return;
 		}
@@ -90,6 +90,12 @@ namespace _ts_SKSEFunctions {
 		auto* high = actor->GetActorRuntimeData().currentProcess->high;
 		if (high) {
 			high->SetHeadtrackTarget(RE::HighProcessData::HEAD_TRACK_TYPE::kScript, target);
+
+			if (pathingLookAt) {
+				high->pathLookAtTarget = target->GetHandle();
+			} else {
+				high->pathLookAtTarget.reset();
+			}
 		}
 	}
 
@@ -105,13 +111,14 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	void SendCustomEvent(std::string eventName, std::string result, float numArg, RE::TESObjectREFR* sender) {
-		auto* args = RE::MakeFunctionArguments(std::string(eventName), std::string(result), float(numArg), (RE::TESObjectREFR*)sender);
-		auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
-		if (vm) {
-			vm->SendEventAll("OnCustomEvent", args);
+	void SendCustomEvent(std::string eventName, RE::BSScript::IFunctionArguments * args) {
+        auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+        if (vm) {
+			vm->SendEventAll(eventName.c_str(), args);
+        } else {
+			spdlog::error("_ts_SKSEFunctions - {}: could not send event {}", __func__, eventName);
 		}
-	}
+    }
 
 /******************************************************************************************/
 
@@ -316,6 +323,24 @@ namespace _ts_SKSEFunctions {
 		}
 
 		return result;
+	}
+
+	/******************************************************************************************/
+
+	RE::Actor* GetCombatTarget(RE::Actor* actor) {
+		if (!actor) {
+			return nullptr;
+		}
+
+		auto targetHandle = actor->GetActorRuntimeData().currentCombatTarget;
+        RE::Actor* target = nullptr;
+        if (targetHandle) {
+			auto targetPtr = targetHandle.get();
+			if (targetPtr) {
+				target = targetPtr.get();
+			}
+		}
+		return target;
 	}
 }
 

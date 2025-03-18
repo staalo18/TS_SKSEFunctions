@@ -21,11 +21,11 @@ namespace _ts_SKSEFunctions {
 
 	void SetAngleZ(RE::TESObjectREFR* a_ref, float a_angleZ);
 
-	void SetLookAt(RE::Actor* actor, RE::TESObjectREFR* target);
+	void SetLookAt(RE::Actor* actor, RE::TESObjectREFR* target, bool pathingLookAt = false);
 
 	void ClearLookAt(RE::Actor* actor);
 
-    void SendCustomEvent(std::string eventName, std::string result, float numArg, RE::TESObjectREFR* sender);
+	void SendCustomEvent(std::string eventName, RE::BSScript::IFunctionArguments * args);
 
 	bool CheckForPackage(RE::Actor* akActor, const RE::BGSListForm* Packagelist, RE::TESPackage* CheckPackage = nullptr);
 
@@ -40,6 +40,8 @@ namespace _ts_SKSEFunctions {
     float GetLandHeightWithWater(RE::TESObjectREFR* a_ref);
 
     bool ClearCombatTargets(RE::Actor* a_actor);
+
+	RE::Actor* GetCombatTarget(RE::Actor* actor);
 
     std::vector<RE::Actor*> GetCombatMembers(const RE::Actor* a_actor);
 
