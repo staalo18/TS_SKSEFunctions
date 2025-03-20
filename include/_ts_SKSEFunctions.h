@@ -21,6 +21,11 @@ namespace _ts_SKSEFunctions {
 
 	void SetAngleZ(RE::TESObjectREFR* a_ref, float a_angleZ);
 
+	void MoveTo(RE::TESObjectREFR* object, const RE::TESObjectREFR* target, 
+				float fOffsetX = 0.0f, float fOffsetY = 0.0f, float fOffsetZ = 0.0f);
+
+	float GetDistance(RE::TESObjectREFR* a_ref1, RE::TESObjectREFR* a_ref2);
+
 	void SetLookAt(RE::Actor* actor, RE::TESObjectREFR* target, bool pathingLookAt = false);
 
 	void ClearLookAt(RE::Actor* actor);
@@ -30,6 +35,14 @@ namespace _ts_SKSEFunctions {
 	bool CheckForPackage(RE::Actor* akActor, const RE::BGSListForm* Packagelist, RE::TESPackage* CheckPackage = nullptr);
 
     bool IsPlayerInRegion(const std::string& regionName);
+
+	int GetFlyingState(RE::Actor* akActor);
+
+	bool IsFlying(RE::Actor* akActor);
+
+	bool HasLOS(RE::Actor* akActor, RE::TESObjectREFR* target);
+
+	int GetCombatState(RE::Actor* akActor);
 
     bool IsFlyingMountPatrolQueued(RE::Actor* akActor);
 
@@ -42,6 +55,8 @@ namespace _ts_SKSEFunctions {
     bool ClearCombatTargets(RE::Actor* a_actor);
 
 	RE::Actor* GetCombatTarget(RE::Actor* actor);
+
+	void StartCombat(RE::Actor* a_actor, RE::Actor* a_target);
 
     std::vector<RE::Actor*> GetCombatMembers(const RE::Actor* a_actor);
 
