@@ -11,6 +11,10 @@ namespace _ts_SKSEFunctions {
 
     void InitializeLogging();
 
+	void WaitWhileGameIsPaused(int checkInterval_ms = 100);
+
+	RE::VMHandle GetHandle(const RE::TESForm* akForm);
+
     bool IsFormValid(RE::TESForm* form, bool checkDeleted = true);
 
 	void SetAngle(RE::TESObjectREFR* a_ref, RE::NiPoint3 a_angle);
@@ -30,7 +34,7 @@ namespace _ts_SKSEFunctions {
 
 	void ClearLookAt(RE::Actor* actor);
 
-	void SendCustomEvent(std::string eventName, RE::BSScript::IFunctionArguments * args);
+	void SendCustomEvent(RE::VMHandle handle, std::string eventName, RE::BSScript::IFunctionArguments * args);
 
 	bool CheckForPackage(RE::Actor* akActor, const RE::BGSListForm* Packagelist, RE::TESPackage* CheckPackage = nullptr);
 
@@ -77,12 +81,6 @@ namespace _ts_SKSEFunctions {
     }
 
 	using ObjectPtr = RE::BSTSmartPointer<RE::BSScript::Object>;
-
-	inline RE::VMHandle GetHandle(RE::TESForm* a_form) {
-		auto vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
-		auto policy = vm->GetObjectHandlePolicy();
-		return policy->GetHandleForObject(a_form->GetFormType(), a_form);
-	}
 
 	inline ObjectPtr GetObjectPtr(RE::TESForm* a_form, const char* a_class, bool a_create) {
 		auto vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();

@@ -29,6 +29,38 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
+	// Function to pause a while loop if the game is in menu mode, console is open, or out of focus
+	void WaitWhileGameIsPaused(int checkInterval_ms) {
+
+		auto* ui = RE::UI::GetSingleton();
+		auto* main = RE::Main::GetSingleton();
+
+		while (ui && (ui->GameIsPaused() || ui->IsMenuOpen(RE::Console::MENU_NAME)) ||
+		(main && !main->gameActive)) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(checkInterval_ms));
+		}
+	}
+
+/******************************************************************************************/
+
+	RE::VMHandle GetHandle(const RE::TESForm* akForm) {
+        if (!(akForm)) {
+            log::warn("{}: akForm doesn't exist or isn't valid", __func__);
+            return NULL;
+        }
+
+        RE::VMTypeID id = static_cast<RE::VMTypeID>(akForm->GetFormType());
+        RE::VMHandle handle = RE::SkyrimVM::GetSingleton()->handlePolicy.GetHandleForObject(id, akForm);
+
+        if (handle == NULL) {
+            return NULL;
+        }
+
+        return handle;
+    }
+
+/******************************************************************************************/
+
 	bool IsFormValid(RE::TESForm* form, bool checkDeleted) {
 		// Copy from DBSkseFunctions - author: Dylbill
 		if (!form) {
@@ -154,10 +186,15 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	void SendCustomEvent(std::string eventName, RE::BSScript::IFunctionArguments * args) {
+	void SendCustomEvent(RE::VMHandle handle, std::string eventName, RE::BSScript::IFunctionArguments * args) {
         auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
         if (vm) {
-			vm->SendEventAll(eventName.c_str(), args);
+			if (handle) {
+				vm->SendEvent(handle, eventName.c_str(), args);
+			} else {
+				spdlog::error("_ts_SKSEFunctions - {}: invalid handle (event {})", __func__, eventName);
+			}
+
         } else {
 			spdlog::error("_ts_SKSEFunctions - {}: could not send event {}", __func__, eventName);
 		}
