@@ -83,6 +83,43 @@ namespace _ts_SKSEFunctions {
 	
 		return true;
 	}
+
+/******************************************************************************************/
+
+	void RegisterForSingleUpdate(RE::VMHandle handle, float delayInSeconds)
+	{
+		if (delayInSeconds < 0.0f) {
+			spdlog::error("_ts_SKSEFunctions - {}: delayInSeconds is negative", __func__);
+			return;
+		}
+		if (!handle) {
+			spdlog::error("_ts_SKSEFunctions - {}: handle is None", __func__);
+			return;
+		}
+
+		auto* skyrimVM = RE::SkyrimVM::GetSingleton();
+		if (!skyrimVM) {
+			spdlog::error("_ts_SKSEFunctions - {}: skyrimVM is None", __func__);
+			return;
+		}
+
+		auto updateEvent = RE::BSTSmartPointer<RE::SkyrimVM::UpdateDataEvent>(new RE::SkyrimVM::UpdateDataEvent());
+		if (!updateEvent) {
+			spdlog::error("_ts_SKSEFunctions - {}: updateEvent is None", __func__);
+			return;
+		}
+
+		updateEvent->updateType = RE::SkyrimVM::UpdateDataEvent::UpdateType::kNoRepeat;  // Single update
+		updateEvent->timeToSendEvent = skyrimVM->currentVMMenuModeTime + static_cast<std::uint32_t>(delayInSeconds * 1000);  // Delay in milliseconds
+		updateEvent->updateTime = static_cast<std::uint32_t>(delayInSeconds * 1000);  // Delay in milliseconds
+		updateEvent->handle = handle;
+
+		// Queue the event
+		{
+			RE::BSSpinLockGuard lock(skyrimVM->queuedOnUpdateEventLock);
+			skyrimVM->queuedOnUpdateEvents.push_back(std::move(updateEvent));
+		}
+	}
 	
 /******************************************************************************************/
 
@@ -353,7 +390,7 @@ namespace _ts_SKSEFunctions {
 		}
 
 		for (int i = 0; i < 3; i++) {
-			condition_GetCombatState->head->data.comparisonValue.f = i;
+				condition_GetCombatState->head->data.comparisonValue.f = i;
 			if (condition_GetCombatState->IsTrue(akActor, nullptr)) {
 				return i;
 			}
@@ -535,7 +572,7 @@ namespace _ts_SKSEFunctions {
 		spdlog::error("_ts_SKSEFunctions - {}: Error - Not yet functional!", __func__);
 		return;
 
-
+/*
 
 		if (!a_actor || !a_target) {
 			spdlog::error("_ts_SKSEFunctions - {}: actor or target is None", __func__);
@@ -563,7 +600,7 @@ namespace _ts_SKSEFunctions {
 			log::info("StartCombat - combatGroup exists");
 		}
 
-		log::info("StartCombat - IsInCombat: {}", a_actor->IsInCombat());
+		log::info("StartCombat - IsInCombat: {}", a_actor->IsInCombat()); */
 	}
 }
 

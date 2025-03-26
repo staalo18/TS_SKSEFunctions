@@ -17,6 +17,8 @@ namespace _ts_SKSEFunctions {
 
     bool IsFormValid(RE::TESForm* form, bool checkDeleted = true);
 
+	void RegisterForSingleUpdate(RE::VMHandle handle, float delayInSeconds);
+	
 	void SetAngle(RE::TESObjectREFR* a_ref, RE::NiPoint3 a_angle);
 
 	void SetAngleX(RE::TESObjectREFR* a_ref, float a_angleX);
