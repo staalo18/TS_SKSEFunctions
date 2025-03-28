@@ -444,6 +444,17 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
+	float GetHealthPercentage(RE::Actor* actor) {
+		if (!actor) {
+			spdlog::error("_ts_SKSEFunctions - {}: actor is None", __func__);
+			return -1.0f;
+		}
+
+		float currenthealth = actor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kHealth);
+        float maxHealth = actor->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kHealth);
+        return currenthealth / maxHealth;
+	}	
+
 	float GetLandHeight(float a_x, float a_y, float a_z)
 	{
 		/* Only works in for coords wich lie in cells that are currently attached. Otherwise returns height -2048.0*/
