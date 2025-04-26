@@ -3,7 +3,7 @@
 
 namespace _ts_SKSEFunctions {
 
-	void InitializeLogging() {
+	void InitializeLogging(spdlog::level::level_enum loglevel) {
 		auto path = log_directory();
 		if (!path) {
 			report_and_fail("Unable to lookup SKSE logs directory.");
@@ -20,7 +20,7 @@ namespace _ts_SKSEFunctions {
 			log = std::make_shared<spdlog::logger>(
 				"Global", std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true));
 		}
-		log->set_level({ spdlog::level::level_enum::info });
+		log->set_level({ loglevel });
 		log->flush_on({ spdlog::level::level_enum::trace });
 
 		spdlog::set_default_logger(std::move(log));

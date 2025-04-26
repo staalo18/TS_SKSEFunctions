@@ -9,7 +9,7 @@
 
 namespace _ts_SKSEFunctions {
 
-    void InitializeLogging();
+    void InitializeLogging(spdlog::level::level_enum loglevel = spdlog::level::level_enum::info);
 
 	void WaitWhileGameIsPaused(int checkInterval_ms = 100);
 
@@ -192,6 +192,60 @@ namespace _ts_SKSEFunctions {
 		}
 	return true;
 	}
+
+	template <typename T>
+	T GetValueFromINI(RE::BSScript::Internal::VirtualMachine* vm, RE::VMStackID stackId, 
+									const std::string& iniKey, const std::string& iniFilename, T defaultValue) {
+
+		std::filesystem::path iniPath = std::filesystem::current_path() / "Data" /  iniFilename;
+		
+		if (!std::filesystem::is_regular_file(iniPath)) {
+			vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: No such file: " +iniPath.string()).c_str(), stackId);
+		}
+
+		size_t separatorPos = iniKey.find(':');
+		std::string key;
+		std::string section;
+
+		if (separatorPos != std::string::npos) {
+			key = iniKey.substr(0, separatorPos);
+			section = iniKey.substr(separatorPos + 1);
+		} else {
+			// Handle case where the separator is not found
+			vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Error - Invalid ini setting format '" + iniKey + "'. Expecting 'key:section'.").c_str(), 
+						stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			return defaultValue;
+		}
+
+		try {
+			CSimpleIniA ini;
+			if (ini.LoadFile(iniPath.string().c_str()) != SI_OK) {
+				vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to parse " +iniPath.string()).c_str(), stackId);
+			}
+
+			if constexpr (std::is_same_v<T, bool>) {
+				return ini.GetBoolValue(section.c_str(), key.c_str(), defaultValue);
+			} else if constexpr (std::is_same_v<T, double>) {
+				return ini.GetDoubleValue(section.c_str(), key.c_str(), defaultValue);
+			} else if constexpr (std::is_same_v<T, long>) {
+				return ini.GetLongValue(section.c_str(), key.c_str(), defaultValue);
+			} else if constexpr (std::is_same_v<T, std::string>) {
+				const char* value = ini.GetValue(section.c_str(), key.c_str(), defaultValue.c_str());
+				return value ? std::string(value) : defaultValue;
+			} else {
+				static_assert(std::false_type::value, "_ts_SKSEFunctions - GetValueFromINI: Unsupported type for INI retrieval");
+			}
+		} catch (const std::exception& ex) {
+			vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: " +std::string(ex.what())).c_str(), 
+						stackId, RE::BSScript::ErrorLogger::Severity::kError);
+		} catch (...) {
+			vm->TraceStack("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: Unknown error", 
+						stackId, RE::BSScript::ErrorLogger::Severity::kError);
+		}
+
+		return defaultValue;
+	}
+
 
 	/* Execute a function on the main thread if called from a different thread
 
