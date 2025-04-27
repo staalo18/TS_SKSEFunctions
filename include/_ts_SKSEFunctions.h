@@ -200,7 +200,10 @@ namespace _ts_SKSEFunctions {
 		std::filesystem::path iniPath = std::filesystem::current_path() / "Data" /  iniFilename;
 		
 		if (!std::filesystem::is_regular_file(iniPath)) {
-			vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: No such file: " +iniPath.string()).c_str(), stackId);
+			if (vm) {
+				vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: No such file: " +iniPath.string()).c_str(), stackId);
+			}
+			return defaultValue;
 		}
 
 		size_t separatorPos = iniKey.find(':');
@@ -212,15 +215,19 @@ namespace _ts_SKSEFunctions {
 			section = iniKey.substr(separatorPos + 1);
 		} else {
 			// Handle case where the separator is not found
-			vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Error - Invalid ini setting format '" + iniKey + "'. Expecting 'key:section'.").c_str(), 
-						stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			if (vm) {
+				vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Error - Invalid ini setting format '" + iniKey + "'. Expecting 'key:section'.").c_str(), 
+							stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			}
 			return defaultValue;
 		}
 
 		try {
 			CSimpleIniA ini;
 			if (ini.LoadFile(iniPath.string().c_str()) != SI_OK) {
-				vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to parse " +iniPath.string()).c_str(), stackId);
+				if (vm) {
+					vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to parse " +iniPath.string()).c_str(), stackId);
+				}
 			}
 
 			if constexpr (std::is_same_v<T, bool>) {
@@ -236,11 +243,15 @@ namespace _ts_SKSEFunctions {
 				static_assert(std::false_type::value, "_ts_SKSEFunctions - GetValueFromINI: Unsupported type for INI retrieval");
 			}
 		} catch (const std::exception& ex) {
-			vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: " +std::string(ex.what())).c_str(), 
-						stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			if (vm) {
+				vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: " +std::string(ex.what())).c_str(), 
+							stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			}
 		} catch (...) {
-			vm->TraceStack("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: Unknown error", 
-						stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			if (vm) {
+				vm->TraceStack("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: Unknown error", 
+							stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			}
 		}
 
 		return defaultValue;
