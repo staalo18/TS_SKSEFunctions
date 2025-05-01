@@ -9,15 +9,15 @@
 
 namespace _ts_SKSEFunctions {
 
-    void InitializeLogging(spdlog::level::level_enum loglevel = spdlog::level::level_enum::info);
+    void InitializeLogging(spdlog::level::level_enum a_loglevel = spdlog::level::level_enum::info);
 
-	void WaitWhileGameIsPaused(int checkInterval_ms = 100);
+	void WaitWhileGameIsPaused(int a_checkInterval_ms = 100);
 
-	RE::VMHandle GetHandle(const RE::TESForm* akForm);
+	RE::VMHandle GetHandle(const RE::TESForm* a_akForm);
 
-    bool IsFormValid(RE::TESForm* form, bool checkDeleted = true);
+    bool IsFormValid(RE::TESForm* a_form, bool a_checkDeleted = true);
 
-	void RegisterForSingleUpdate(RE::VMHandle handle, float delayInSeconds);
+	void RegisterForSingleUpdate(RE::VMHandle a_handle, float a_delayInSeconds);
 
 	void SetAngle(RE::TESObjectREFR* a_ref, RE::NiPoint3 a_angle);
 
@@ -27,34 +27,34 @@ namespace _ts_SKSEFunctions {
 
 	void SetAngleZ(RE::TESObjectREFR* a_ref, float a_angleZ);
 
-	void MoveTo(RE::TESObjectREFR* object, const RE::TESObjectREFR* target, 
-				float fOffsetX = 0.0f, float fOffsetY = 0.0f, float fOffsetZ = 0.0f);
+	void MoveTo(RE::TESObjectREFR* a_object, const RE::TESObjectREFR* a_target, 
+				float a_fOffsetX = 0.0f, float a_fOffsetY = 0.0f, float a_fOffsetZ = 0.0f);
 
 	float GetDistance(RE::TESObjectREFR* a_ref1, RE::TESObjectREFR* a_ref2);
 
-	void SetLookAt(RE::Actor* actor, RE::TESObjectREFR* target, bool pathingLookAt = false);
+	void SetLookAt(RE::Actor* a_actor, RE::TESObjectREFR* a_target, bool a_pathingLookAt = false);
 
-	void ClearLookAt(RE::Actor* actor);
+	void ClearLookAt(RE::Actor* a_actor);
 
-	void SendCustomEvent(RE::VMHandle handle, std::string eventName, RE::BSScript::IFunctionArguments * args);
+	void SendCustomEvent(RE::VMHandle a_handle, std::string a_eventName, RE::BSScript::IFunctionArguments * a_args);
 
-	bool CheckForPackage(RE::Actor* akActor, const RE::BGSListForm* Packagelist, RE::TESPackage* CheckPackage = nullptr);
+	bool CheckForPackage(RE::Actor* a_akActor, const RE::BGSListForm* a_Packagelist, RE::TESPackage* a_CheckPackage = nullptr);
 
-    bool IsPlayerInRegion(const std::string& regionName);
+    bool IsPlayerInRegion(const std::string& a_regionName);
 
-	int GetFlyingState(RE::Actor* akActor);
+	int GetFlyingState(RE::Actor* a_akActor);
 
-	bool IsFlying(RE::Actor* akActor);
+	bool IsFlying(RE::Actor* a_akActor);
 
-	bool HasLOS(RE::Actor* akActor, RE::TESObjectREFR* target);
+	bool HasLOS(RE::Actor* a_akActor, RE::TESObjectREFR* a_target);
 
-	int GetCombatState(RE::Actor* akActor);
+	int GetCombatState(RE::Actor* a_akActor);
 
-    bool IsFlyingMountPatrolQueued(RE::Actor* akActor);
+    bool IsFlyingMountPatrolQueued(RE::Actor* a_akActor);
 
-    bool IsFlyingMountFastTravelling(RE::Actor* akActor);
+    bool IsFlyingMountFastTravelling(RE::Actor* a_akActor);
 
-	float GetHealthPercentage(RE::Actor* actor);
+	float GetHealthPercentage(RE::Actor* a_actor);
 
     float GetLandHeight(float a_x, float a_y, float a_z);
 
@@ -62,7 +62,7 @@ namespace _ts_SKSEFunctions {
 
     bool ClearCombatTargets(RE::Actor* a_actor);
 
-	RE::Actor* GetCombatTarget(RE::Actor* actor);
+	RE::Actor* GetCombatTarget(RE::Actor* a_actor);
 
 	void StartCombat(RE::Actor* a_actor, RE::Actor* a_target);
 
@@ -70,7 +70,7 @@ namespace _ts_SKSEFunctions {
 
 	// call a global papyrus function from C++
     template <class ... Args>
-	bool CallPapyrusFunction(std::string_view functionClass, std::string_view function, Args... a_args) {
+	bool CallPapyrusFunction(std::string_view a_functionClass, std::string_view a_function, Args... a_args) {
 		// example usage:
 		// _ts_SKSEFunctions::CallPapyrusFunction("Game"sv, "FastTravel"sv, FastTravelTarget);
 		const auto skyrimVM = RE::SkyrimVM::GetSingleton();
@@ -78,9 +78,9 @@ namespace _ts_SKSEFunctions {
 		if (vm) {
 			RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
 			auto args = RE::MakeFunctionArguments(std::forward<Args>(a_args)...);
-			return vm->DispatchStaticCall(std::string(functionClass).c_str(), std::string(function).c_str(), args, callback);
+			return vm->DispatchStaticCall(std::string(a_functionClass).c_str(), std::string(a_function).c_str(), args, callback);
 		}
-		spdlog::error("_ts_SKSEFunctions - {}: could not call function {}.{}", __func__, functionClass, function);
+		spdlog::error("_ts_SKSEFunctions - {}: could not call function {}.{}", __func__, a_functionClass, a_function);
 		return false;
     }
 
@@ -102,7 +102,7 @@ namespace _ts_SKSEFunctions {
 
 	// Call a papyrus function from a script that extends a form (actor, quest etc) from C++
 	template <class ... Args>
-	bool CallPapyrusFunctionOn(RE::TESForm* a_form, std::string_view formKind, std::string_view function, Args... a_args) {
+	bool CallPapyrusFunctionOn(RE::TESForm* a_form, std::string_view a_formKind, std::string_view a_function, Args... a_args) {
 		// example usage:
 		// RE::TESQuest* RideQuest = ...;
 		// RE::TESActor* Player = ...;
@@ -113,12 +113,12 @@ namespace _ts_SKSEFunctions {
 		if (vm) {
 			RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
 			auto args = RE::MakeFunctionArguments(std::forward<Args>(a_args)...);
-			auto objectPtr = GetObjectPtr(a_form, std::string(formKind).c_str(), false);
+			auto objectPtr = GetObjectPtr(a_form, std::string(a_formKind).c_str(), false);
 			if (!objectPtr) {
 				spdlog::error("_ts_SKSEFunctions - {}: Could not bind form", __func__);
 				return false;
 			}
-			bool bDispatch = vm->DispatchMethodCall1(objectPtr, std::string(function).c_str(), args, callback);
+			bool bDispatch = vm->DispatchMethodCall1(objectPtr, std::string(a_function).c_str(), args, callback);
 			if (!bDispatch) {
 				spdlog::error("_ts_SKSEFunctions - {}: Could not dispatch method call", __func__);
 			}
@@ -129,132 +129,132 @@ namespace _ts_SKSEFunctions {
 
 
 	template <typename T>
-	bool UpdateIniSetting(const std::string& settingName, T value) {
+	bool UpdateIniSetting(const std::string& a_settingName, T a_value) {
 		auto* settingCollection = RE::INISettingCollection::GetSingleton();
-		RE::Setting* setting = settingCollection->GetSetting(settingName.c_str());
+		RE::Setting* setting = settingCollection->GetSetting(a_settingName.c_str());
 		if (!setting) {
-			spdlog::error("_ts_SKSEFunctions - {}: Failed to get INI variable: {}", __func__, settingName);
+			spdlog::error("_ts_SKSEFunctions - {}: Failed to get INI variable: {}", __func__, a_settingName);
 			return false;
 		}
 
 		switch (setting->GetType()) {
 			case RE::Setting::Type::kBool:
 				if constexpr (std::is_same_v<T, bool>) {
-					setting->data.b = value;
+					setting->data.b = a_value;
 				} else {
-					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, a_settingName);
 					return false;
 				}
 				break;
 			case RE::Setting::Type::kFloat:
 				if constexpr (std::is_same_v<T, float>) {
-					setting->data.f = value;
+					setting->data.f = a_value;
 				} else {
-					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, a_settingName);
 					return false;
 				}
 				break;
 			case RE::Setting::Type::kSignedInteger:
 				if constexpr (std::is_same_v<T, std::int32_t>) {
-					setting->data.i = value;
+					setting->data.i = a_value;
 				} else {
-					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, a_settingName);
 					return false;
 				}
 				break;
 			case RE::Setting::Type::kColor:
 				if constexpr (std::is_same_v<T, RE::Color>) {
-					setting->data.r = value;
+					setting->data.r = a_value;
 				} else {
-					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, a_settingName);
 					return false;
 				}
 				break;
 			case RE::Setting::Type::kString:
 				if constexpr (std::is_same_v<T, const char*>) {
-					setting->data.s = const_cast<char*>(value);
+					setting->data.s = const_cast<char*>(a_value);
 				} else {
-					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, a_settingName);
 					return false;
 				}
 				break;
 			case RE::Setting::Type::kUnsignedInteger:
 				if constexpr (std::is_same_v<T, std::uint32_t>) {
-					setting->data.u = value;
+					setting->data.u = a_value;
 				} else {
-					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, settingName);
+					spdlog::error("_ts_SKSEFunctions - {}: Type mismatch for INI variable: {}", __func__, a_settingName);
 					return false;
 				}
 				break;
 			default:
-			spdlog::error("_ts_SKSEFunctions - {}: Unknown type for INI variable: {}", __func__, settingName);
+			spdlog::error("_ts_SKSEFunctions - {}: Unknown type for INI variable: {}", __func__, a_settingName);
 				return false;
 		}
 	return true;
 	}
 
 	template <typename T>
-	T GetValueFromINI(RE::BSScript::Internal::VirtualMachine* vm, RE::VMStackID stackId, 
-									const std::string& iniKey, const std::string& iniFilename, T defaultValue) {
+	T GetValueFromINI(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackId, 
+									const std::string& a_iniKey, const std::string& a_iniFilename, T a_defaultValue) {
 
-		std::filesystem::path iniPath = std::filesystem::current_path() / "Data" /  iniFilename;
+		std::filesystem::path iniPath = std::filesystem::current_path() / "Data" /  a_iniFilename;
 		
 		if (!std::filesystem::is_regular_file(iniPath)) {
-			if (vm) {
-				vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: No such file: " +iniPath.string()).c_str(), stackId);
+			if (a_vm) {
+				a_vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: No such file: " +iniPath.string()).c_str(), a_stackId);
 			}
-			return defaultValue;
+			return a_defaultValue;
 		}
 
-		size_t separatorPos = iniKey.find(':');
+		size_t separatorPos = a_iniKey.find(':');
 		std::string key;
 		std::string section;
 
 		if (separatorPos != std::string::npos) {
-			key = iniKey.substr(0, separatorPos);
-			section = iniKey.substr(separatorPos + 1);
+			key = a_iniKey.substr(0, separatorPos);
+			section = a_iniKey.substr(separatorPos + 1);
 		} else {
 			// Handle case where the separator is not found
-			if (vm) {
-				vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Error - Invalid ini setting format '" + iniKey + "'. Expecting 'key:section'.").c_str(), 
-							stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			if (a_vm) {
+				a_vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Error - Invalid ini setting format '" + a_iniKey + "'. Expecting 'key:section'.").c_str(), 
+							a_stackId, RE::BSScript::ErrorLogger::Severity::kError);
 			}
-			return defaultValue;
+			return a_defaultValue;
 		}
 
 		try {
 			CSimpleIniA ini;
 			if (ini.LoadFile(iniPath.string().c_str()) != SI_OK) {
-				if (vm) {
-					vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to parse " +iniPath.string()).c_str(), stackId);
+				if (a_vm) {
+					a_vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to parse " +iniPath.string()).c_str(), a_stackId);
 				}
 			}
 
 			if constexpr (std::is_same_v<T, bool>) {
-				return ini.GetBoolValue(section.c_str(), key.c_str(), defaultValue);
+				return ini.GetBoolValue(section.c_str(), key.c_str(), a_defaultValue);
 			} else if constexpr (std::is_same_v<T, double>) {
-				return ini.GetDoubleValue(section.c_str(), key.c_str(), defaultValue);
+				return ini.GetDoubleValue(section.c_str(), key.c_str(), a_defaultValue);
 			} else if constexpr (std::is_same_v<T, long>) {
-				return ini.GetLongValue(section.c_str(), key.c_str(), defaultValue);
+				return ini.GetLongValue(section.c_str(), key.c_str(), a_defaultValue);
 			} else if constexpr (std::is_same_v<T, std::string>) {
-				const char* value = ini.GetValue(section.c_str(), key.c_str(), defaultValue.c_str());
-				return value ? std::string(value) : defaultValue;
+				const char* value = ini.GetValue(section.c_str(), key.c_str(), a_defaultValue.c_str());
+				return value ? std::string(value) : a_defaultValue;
 			} else {
 				static_assert(std::false_type::value, "_ts_SKSEFunctions - GetValueFromINI: Unsupported type for INI retrieval");
 			}
 		} catch (const std::exception& ex) {
-			if (vm) {
-				vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: " +std::string(ex.what())).c_str(), 
-							stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			if (a_vm) {
+				a_vm->TraceStack(("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: " +std::string(ex.what())).c_str(), 
+							a_stackId, RE::BSScript::ErrorLogger::Severity::kError);
 			}
 		} catch (...) {
-			if (vm) {
-				vm->TraceStack("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: Unknown error", 
-							stackId, RE::BSScript::ErrorLogger::Severity::kError);
+			if (a_vm) {
+				a_vm->TraceStack("_ts_SKSEFunctions - GetValueFromINI: Failed to load from .ini: Unknown error", 
+							a_stackId, RE::BSScript::ErrorLogger::Severity::kError);
 			}
 		}
 
-		return defaultValue;
+		return a_defaultValue;
 	}
 
 
@@ -280,8 +280,8 @@ namespace _ts_SKSEFunctions {
 
 	*/
 	template <typename Func, typename... Args>
-	auto ExecuteOnMainThread(Func&& func, Args&&... args) -> decltype(func(std::forward<Args>(args)...)) {
-		using ReturnType = decltype(func(std::forward<Args>(args)...));
+	auto ExecuteOnMainThread(Func&& a_func, Args&&... a_args) -> decltype(a_func(std::forward<Args>(a_args)...)) {
+		using ReturnType = decltype(a_func(std::forward<Args>(a_args)...));
 		auto currentThreadId = std::this_thread::get_id();
     
 		/* Not yet implemented: check if the function is called from a Papyrus thread
@@ -290,9 +290,9 @@ namespace _ts_SKSEFunctions {
 			spdlog::info("_ts_SKSEFunctions - {}: Executing function on main thread", __func__);
 			// If called from the main thread, execute the function directly
 			if constexpr (std::is_void_v<ReturnType>) {
-				func(std::forward<Args>(args)...);
+				a_func(std::forward<Args>(a_args)...);
 			} else {
-				return func(std::forward<Args>(args)...);
+				return a_func(std::forward<Args>(a_args)...);
 			}
 		} else {
 			*/
@@ -305,16 +305,16 @@ namespace _ts_SKSEFunctions {
 //				auto promise = std::make_shared<std::promise<void>>();
 //				auto future = promise->get_future();
 //				SKSE::GetTaskInterface()->AddTask([func = std::forward<Func>(func), promise, args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-				SKSE::GetTaskInterface()->AddTask([func = std::forward<Func>(func), args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-					std::apply(func, args);
+				SKSE::GetTaskInterface()->AddTask([a_func = std::forward<Func>(a_func), args = std::make_tuple(std::forward<Args>(a_args)...)]() mutable {
+					std::apply(a_func, args);
 //					promise->set_value();
 				});
 //				future.get();
 			} else {
 				auto promise = std::make_shared<std::promise<ReturnType>>();
 				auto future = promise->get_future();
-				SKSE::GetTaskInterface()->AddTask([func = std::forward<Func>(func), promise, args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-					promise->set_value(std::apply(func, args));
+				SKSE::GetTaskInterface()->AddTask([a_func = std::forward<Func>(a_func), promise, args = std::make_tuple(std::forward<Args>(a_args)...)]() mutable {
+					promise->set_value(std::apply(a_func, args));
 				});
 				return future.get();
 			}
@@ -322,9 +322,9 @@ namespace _ts_SKSEFunctions {
 	}
 
 	template <typename Func, typename... Args>
-	void SendToMainThread(Func&& func, Args&&... args) {
-		SKSE::GetTaskInterface()->AddTask([func = std::forward<Func>(func), args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-			std::apply(func, args);
+	void SendToMainThread(Func&& a_func, Args&&... a_args) {
+		SKSE::GetTaskInterface()->AddTask([a_func = std::forward<Func>(a_func), args = std::make_tuple(std::forward<Args>(a_args)...)]() mutable {
+			std::apply(a_func, args);
 		});
 	}
 }

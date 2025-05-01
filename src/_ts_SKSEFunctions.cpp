@@ -3,11 +3,11 @@
 
 namespace _ts_SKSEFunctions {
 
-	void InitializeLogging(spdlog::level::level_enum loglevel) {
+	void InitializeLogging(spdlog::level::level_enum a_loglevel) {
 		auto path = log_directory();
 		if (!path) {
 			report_and_fail("Unable to lookup SKSE logs directory.");
-	}
+		}
 		*path /= PluginDeclaration::GetSingleton()->GetName();
 		*path += L".log";
 
@@ -20,7 +20,7 @@ namespace _ts_SKSEFunctions {
 			log = std::make_shared<spdlog::logger>(
 				"Global", std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true));
 		}
-		log->set_level({ loglevel });
+		log->set_level({ a_loglevel });
 		log->flush_on({ spdlog::level::level_enum::trace });
 
 		spdlog::set_default_logger(std::move(log));
@@ -30,27 +30,27 @@ namespace _ts_SKSEFunctions {
 /******************************************************************************************/
 
 	// Function to pause a while loop if the game is in menu mode, console is open, or out of focus
-	void WaitWhileGameIsPaused(int checkInterval_ms) {
+	void WaitWhileGameIsPaused(int a_checkInterval_ms) {
 
 		auto* ui = RE::UI::GetSingleton();
 		auto* main = RE::Main::GetSingleton();
 
 		while (ui && (ui->GameIsPaused() || ui->IsMenuOpen(RE::Console::MENU_NAME)) ||
 		(main && !main->gameActive)) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(checkInterval_ms));
+			std::this_thread::sleep_for(std::chrono::milliseconds(a_checkInterval_ms));
 		}
 	}
 
 /******************************************************************************************/
 
-	RE::VMHandle GetHandle(const RE::TESForm* akForm) {
-        if (!(akForm)) {
-            log::warn("{}: akForm doesn't exist or isn't valid", __func__);
+	RE::VMHandle GetHandle(const RE::TESForm* a_akForm) {
+        if (!(a_akForm)) {
+            log::warn("{}: a_akForm doesn't exist or isn't valid", __func__);
             return NULL;
         }
 
-        RE::VMTypeID id = static_cast<RE::VMTypeID>(akForm->GetFormType());
-        RE::VMHandle handle = RE::SkyrimVM::GetSingleton()->handlePolicy.GetHandleForObject(id, akForm);
+        RE::VMTypeID id = static_cast<RE::VMTypeID>(a_akForm->GetFormType());
+        RE::VMHandle handle = RE::SkyrimVM::GetSingleton()->handlePolicy.GetHandleForObject(id, a_akForm);
 
         if (handle == NULL) {
             return NULL;
@@ -61,22 +61,22 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	bool IsFormValid(RE::TESForm* form, bool checkDeleted) {
+	bool IsFormValid(RE::TESForm* a_form, bool a_checkDeleted) {
 		// Copy from DBSkseFunctions - author: Dylbill
-		if (!form) {
+		if (!a_form) {
 			return false;
 		}
 	
-		if (IsBadReadPtr(form, sizeof(form))) {
+		if (IsBadReadPtr(a_form, sizeof(a_form))) {
 			return false;
 		}
 	
-		if (form->GetFormID() == 0) {
+		if (a_form->GetFormID() == 0) {
 			return false;
 		}
 	
-		if (checkDeleted) {
-			if (form->IsDeleted()) {
+		if (a_checkDeleted) {
+			if (a_form->IsDeleted()) {
 				return false;
 			}
 		}
@@ -86,14 +86,14 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	void RegisterForSingleUpdate(RE::VMHandle handle, float delayInSeconds)
+	void RegisterForSingleUpdate(RE::VMHandle a_handle, float a_delayInSeconds)
 	{
-		if (delayInSeconds < 0.0f) {
-			spdlog::error("_ts_SKSEFunctions - {}: delayInSeconds is negative", __func__);
+		if (a_delayInSeconds < 0.0f) {
+			spdlog::error("_ts_SKSEFunctions - {}: a_delayInSeconds is negative", __func__);
 			return;
 		}
-		if (!handle) {
-			spdlog::error("_ts_SKSEFunctions - {}: handle is None", __func__);
+		if (!a_handle) {
+			spdlog::error("_ts_SKSEFunctions - {}: a_handle is None", __func__);
 			return;
 		}
 
@@ -110,9 +110,9 @@ namespace _ts_SKSEFunctions {
 		}
 
 		updateEvent->updateType = RE::SkyrimVM::UpdateDataEvent::UpdateType::kNoRepeat;  // Single update
-		updateEvent->timeToSendEvent = skyrimVM->currentVMMenuModeTime + static_cast<std::uint32_t>(delayInSeconds * 1000);  // Delay in milliseconds
-		updateEvent->updateTime = static_cast<std::uint32_t>(delayInSeconds * 1000);  // Delay in milliseconds
-		updateEvent->handle = handle;
+		updateEvent->timeToSendEvent = skyrimVM->currentVMMenuModeTime + static_cast<std::uint32_t>(a_delayInSeconds * 1000);  // Delay in milliseconds
+		updateEvent->updateTime = static_cast<std::uint32_t>(a_delayInSeconds * 1000);  // Delay in milliseconds
+		updateEvent->handle = a_handle;
 
 		// Queue the event
 		{
@@ -167,17 +167,17 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 	
-	void MoveTo(RE::TESObjectREFR* object, const RE::TESObjectREFR* target, float fOffsetX, float fOffsetY, float fOffsetZ) {
-		if (!object) {
-			spdlog::error("_ts_SKSEFunctions - {}: object is None", __func__);
+	void MoveTo(RE::TESObjectREFR* a_object, const RE::TESObjectREFR* a_target, float a_fOffsetX, float a_fOffsetY, float a_fOffsetZ) {
+		if (!a_object) {
+			spdlog::error("_ts_SKSEFunctions - {}: a_object is None", __func__);
 			return;
 		}
-		if (!target) {
-			spdlog::error("_ts_SKSEFunctions - {}: target is None", __func__);
+		if (!a_target) {
+			spdlog::error("_ts_SKSEFunctions - {}: a_target is None", __func__);
 			return;
 		}
-		RE::NiPoint3 pos = target->GetPosition();
-		object->SetPosition(pos.x + fOffsetX , pos.y + fOffsetY, pos.z + fOffsetZ);
+		RE::NiPoint3 pos = a_target->GetPosition();
+		a_object->SetPosition(pos.x + a_fOffsetX , pos.y + a_fOffsetY, pos.z + a_fOffsetZ);
 	}
 
 /******************************************************************************************/
@@ -192,30 +192,30 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	void SetLookAt(RE::Actor* actor, RE::TESObjectREFR* target, bool pathingLookAt) {
-		if (!actor || !target) {
-			spdlog::error("_ts_SKSEFunctions - {}: actor or target is None", __func__);
+	void SetLookAt(RE::Actor* a_actor, RE::TESObjectREFR* a_target, bool a_pathingLookAt) {
+		if (!a_actor || !a_target) {
+			spdlog::error("_ts_SKSEFunctions - {}: a_actor or a_target is None", __func__);
 			return;
 		}
 
-		auto* high = actor->GetActorRuntimeData().currentProcess->high;
+		auto* high = a_actor->GetActorRuntimeData().currentProcess->high;
 		if (high) {
-			high->SetHeadtrackTarget(RE::HighProcessData::HEAD_TRACK_TYPE::kScript, target);
+			high->SetHeadtrackTarget(RE::HighProcessData::HEAD_TRACK_TYPE::kScript, a_target);
 
-			if (pathingLookAt) {
-				high->pathLookAtTarget = target->GetHandle();
+			if (a_pathingLookAt) {
+				high->pathLookAtTarget = a_target->GetHandle();
 			} else {
 				high->pathLookAtTarget.reset();
 			}
 		}
 	}
 
-	void ClearLookAt(RE::Actor* actor) {
-		if (!actor) {
-			spdlog::error("_ts_SKSEFunctions - {}: actor is None", __func__);
+	void ClearLookAt(RE::Actor* a_actor) {
+		if (!a_actor) {
+			spdlog::error("_ts_SKSEFunctions - {}: a_actor is None", __func__);
 			return;
 		}
-		auto* high = actor->GetActorRuntimeData().currentProcess->high;
+		auto* high = a_actor->GetActorRuntimeData().currentProcess->high;
 		if (high) {
 			high->ClearHeadtrackTarget(RE::HighProcessData::HEAD_TRACK_TYPE::kScript, true);
 		}
@@ -223,38 +223,38 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	void SendCustomEvent(RE::VMHandle handle, std::string eventName, RE::BSScript::IFunctionArguments * args) {
+	void SendCustomEvent(RE::VMHandle a_handle, std::string a_eventName, RE::BSScript::IFunctionArguments * a_args) {
         auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
         if (vm) {
-			if (handle) {
-				vm->SendEvent(handle, eventName.c_str(), args);
+			if (a_handle) {
+				vm->SendEvent(a_handle, a_eventName.c_str(), a_args);
 			} else {
-				spdlog::error("_ts_SKSEFunctions - {}: invalid handle (event {})", __func__, eventName);
+				spdlog::error("_ts_SKSEFunctions - {}: invalid handle (event {})", __func__, a_eventName);
 			}
 
         } else {
-			spdlog::error("_ts_SKSEFunctions - {}: could not send event {}", __func__, eventName);
+			spdlog::error("_ts_SKSEFunctions - {}: could not send event {}", __func__, a_eventName);
 		}
     }
 
 /******************************************************************************************/
 
-	bool CheckForPackage(RE::Actor* akActor, const RE::BGSListForm* Packagelist, RE::TESPackage* CheckPackage) {
-		if (!akActor) {
-			spdlog::error("_ts_SKSEFunctions - {}: error, akActor doesn't exist", __func__);
+	bool CheckForPackage(RE::Actor* a_akActor, const RE::BGSListForm* a_Packagelist, RE::TESPackage* a_CheckPackage) {
+		if (!a_akActor) {
+			spdlog::error("_ts_SKSEFunctions - {}: error, a_akActor doesn't exist", __func__);
 			return false;
 		}
 
-		if (!Packagelist) {
+		if (!a_Packagelist) {
 			return false;
 		}
 
-		if (!CheckPackage) {
-			CheckPackage = akActor->GetCurrentPackage();
+		if (!a_CheckPackage) {
+			a_CheckPackage = a_akActor->GetCurrentPackage();
 		}
 
-		for (auto& form : Packagelist->forms) {
-			if (form && form->As<RE::TESPackage>() == CheckPackage) {
+		for (auto& form : a_Packagelist->forms) {
+			if (form && form->As<RE::TESPackage>() == a_CheckPackage) {
 				return true;
 			}
 		}
@@ -265,7 +265,7 @@ namespace _ts_SKSEFunctions {
 /******************************************************************************************/
 
 	RE::TESCondition* condition_IsPlayerInRegion;
-	bool IsPlayerInRegion(const std::string& regionName) {
+	bool IsPlayerInRegion(const std::string& a_regionName) {
 	
 		auto player = RE::PlayerCharacter::GetSingleton();
 	
@@ -284,9 +284,9 @@ namespace _ts_SKSEFunctions {
 			condition_IsPlayerInRegion->head = conditionItem;
 		}
 	
-		auto* regionForm =  RE::TESForm::LookupByEditorID(regionName);
+		auto* regionForm =  RE::TESForm::LookupByEditorID(a_regionName);
 		if (!regionForm) {
-			spdlog::error("_ts_SKSEFunctions - {}: Failed to lookup region form {}", __func__, regionName);
+			spdlog::error("_ts_SKSEFunctions - {}: Failed to lookup region form {}", __func__, a_regionName);
 			return false;
 		}
 		condition_IsPlayerInRegion->head->data.functionData.params[0] = regionForm;
@@ -297,9 +297,9 @@ namespace _ts_SKSEFunctions {
 /******************************************************************************************/
 	
 	RE::TESCondition* condition_GetFlyingState;
-	int GetFlyingState(RE::Actor* akActor) {
-		if (!IsFormValid(akActor)) {
-			spdlog::warn("_ts_SKSEFunctions - {}: error, akActor doesn't exist", __func__);
+	int GetFlyingState(RE::Actor* a_akActor) {
+		if (!IsFormValid(a_akActor)) {
+			spdlog::warn("_ts_SKSEFunctions - {}: error, a_akActor doesn't exist", __func__);
 			return -1;
 		}
 
@@ -314,7 +314,7 @@ namespace _ts_SKSEFunctions {
 
 		for (int i = 0; i < 6; i++) {
 			condition_GetFlyingState->head->data.comparisonValue.f = i;
-			if (condition_GetFlyingState->IsTrue(akActor, nullptr)) {
+			if (condition_GetFlyingState->IsTrue(a_akActor, nullptr)) {
 				return i;
 			}
 		}
@@ -324,9 +324,9 @@ namespace _ts_SKSEFunctions {
 /******************************************************************************************/
 
 	RE::TESCondition* condition_GetIsFlying;
-	bool IsFlying(RE::Actor* akActor) {
-		if (!IsFormValid(akActor)) {
-			spdlog::warn("_ts_SKSEFunctions - {}: error, akActor doesn't exist", __func__);
+	bool IsFlying(RE::Actor* a_akActor) {
+		if (!IsFormValid(a_akActor)) {
+			spdlog::warn("_ts_SKSEFunctions - {}: error, a_akActor doesn't exist", __func__);
 			return false;
 		}
 
@@ -340,20 +340,20 @@ namespace _ts_SKSEFunctions {
 			condition_GetIsFlying->head = conditionItem;
 		}
 
-		return condition_GetIsFlying->IsTrue(akActor, nullptr);
+		return condition_GetIsFlying->IsTrue(a_akActor, nullptr);
 	}
 
 /******************************************************************************************/
 
 	RE::TESCondition* condition_HasLOS;
-	bool HasLOS(RE::Actor* akActor, RE::TESObjectREFR* target) {
-		if (!IsFormValid(akActor)) {
-			spdlog::warn("_ts_SKSEFunctions - {}: error, akActor doesn't exist", __func__);
+	bool HasLOS(RE::Actor* a_akActor, RE::TESObjectREFR* a_target) {
+		if (!IsFormValid(a_akActor)) {
+			spdlog::warn("_ts_SKSEFunctions - {}: error, a_akActor doesn't exist", __func__);
 			return false;
 		}
 
-		if (!IsFormValid(target)) {
-			spdlog::warn("_ts_SKSEFunctions - {}: error, target doesn't exist", __func__);
+		if (!IsFormValid(a_target)) {
+			spdlog::warn("_ts_SKSEFunctions - {}: error, a_target doesn't exist", __func__);
 			return false;
 		}
 
@@ -367,16 +367,16 @@ namespace _ts_SKSEFunctions {
 			condition_HasLOS->head = conditionItem;
 		}
 
-		condition_HasLOS->head->data.functionData.params[0] = target;
-		return condition_HasLOS->IsTrue(akActor, nullptr);
+		condition_HasLOS->head->data.functionData.params[0] = a_target;
+		return condition_HasLOS->IsTrue(a_akActor, nullptr);
 	}
 
 /******************************************************************************************/
 
 	RE::TESCondition* condition_GetCombatState;
-	int GetCombatState(RE::Actor* akActor) {
-		if (!IsFormValid(akActor)) {
-			spdlog::warn("_ts_SKSEFunctions - {}: error, akActor doesn't exist", __func__);
+	int GetCombatState(RE::Actor* a_akActor) {
+		if (!IsFormValid(a_akActor)) {
+			spdlog::warn("_ts_SKSEFunctions - {}: error, a_akActor doesn't exist", __func__);
 			return -1;
 		}
 
@@ -391,7 +391,7 @@ namespace _ts_SKSEFunctions {
 
 		for (int i = 0; i < 3; i++) {
 				condition_GetCombatState->head->data.comparisonValue.f = i;
-			if (condition_GetCombatState->IsTrue(akActor, nullptr)) {
+			if (condition_GetCombatState->IsTrue(a_akActor, nullptr)) {
 				return i;
 			}
 		}
@@ -401,9 +401,9 @@ namespace _ts_SKSEFunctions {
 /******************************************************************************************/
 	
 	RE::TESCondition* condition_IsFlyingMountPatrolQueued;
-	bool IsFlyingMountPatrolQueued(RE::Actor* akActor) {
-		if (!IsFormValid(akActor)) {
-			spdlog::warn("_ts_SKSEFunctions - {}: error, akActor doesn't exist", __func__);
+	bool IsFlyingMountPatrolQueued(RE::Actor* a_akActor) {
+		if (!IsFormValid(a_akActor)) {
+			spdlog::warn("_ts_SKSEFunctions - {}: error, a_akActor doesn't exist", __func__);
 			return false;
 		}
 
@@ -417,15 +417,15 @@ namespace _ts_SKSEFunctions {
 			condition_IsFlyingMountPatrolQueued->head = conditionItem;
 		}
 
-		return condition_IsFlyingMountPatrolQueued->IsTrue(akActor, nullptr);
+		return condition_IsFlyingMountPatrolQueued->IsTrue(a_akActor, nullptr);
 	}
 
 /******************************************************************************************/
 	
 	RE::TESCondition* condition_IsFlyingMountFastTravelling;
-	bool IsFlyingMountFastTravelling(RE::Actor* akActor) {
-		if (!IsFormValid(akActor)) {
-			spdlog::warn("_ts_SKSEFunctions - {}: error, akActor doesn't exist", __func__);
+	bool IsFlyingMountFastTravelling(RE::Actor* a_akActor) {
+		if (!IsFormValid(a_akActor)) {
+			spdlog::warn("_ts_SKSEFunctions - {}: error, a_akActor doesn't exist", __func__);
 			return false;
 		}
 
@@ -439,19 +439,19 @@ namespace _ts_SKSEFunctions {
 			condition_IsFlyingMountFastTravelling->head = conditionItem;
 		}
 
-		return condition_IsFlyingMountFastTravelling->IsTrue(akActor, nullptr);
+		return condition_IsFlyingMountFastTravelling->IsTrue(a_akActor, nullptr);
 	}
 
 /******************************************************************************************/
 
-	float GetHealthPercentage(RE::Actor* actor) {
-		if (!actor) {
-			spdlog::error("_ts_SKSEFunctions - {}: actor is None", __func__);
+	float GetHealthPercentage(RE::Actor* a_actor) {
+		if (!a_actor) {
+			spdlog::error("_ts_SKSEFunctions - {}: a_actor is None", __func__);
 			return -1.0f;
 		}
 
-		float currenthealth = actor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kHealth);
-        float maxHealth = actor->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kHealth);
+		float currenthealth = a_actor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kHealth);
+        float maxHealth = a_actor->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kHealth);
         return currenthealth / maxHealth;
 	}	
 
@@ -528,7 +528,7 @@ namespace _ts_SKSEFunctions {
 		std::vector<RE::Actor*> result;
 
 		if (!a_actor) {
-			spdlog::info("_ts_SKSEFunctions - {}: Actor is None", __func__);
+			spdlog::info("_ts_SKSEFunctions - {}: a_actor is None", __func__);
 			return result;
 		}
 
@@ -559,12 +559,12 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	RE::Actor* GetCombatTarget(RE::Actor* actor) {
-		if (!actor) {
+	RE::Actor* GetCombatTarget(RE::Actor* a_actor) {
+		if (!a_actor) {
 			return nullptr;
 		}
 
-		auto targetHandle = actor->GetActorRuntimeData().currentCombatTarget;
+		auto targetHandle = a_actor->GetActorRuntimeData().currentCombatTarget;
         RE::Actor* target = nullptr;
         if (targetHandle) {
 			auto targetPtr = targetHandle.get();
@@ -586,7 +586,7 @@ namespace _ts_SKSEFunctions {
 /*
 
 		if (!a_actor || !a_target) {
-			spdlog::error("_ts_SKSEFunctions - {}: actor or target is None", __func__);
+			spdlog::error("_ts_SKSEFunctions - {}: a_actor or a_target is None", __func__);
 			return;
 		}
 

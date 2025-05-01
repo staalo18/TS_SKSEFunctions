@@ -3,14 +3,10 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Set your project name. This will be the name of your SKSE .dll file.
-project(TSPapyrusFunctions VERSION 0.1.0 LANGUAGES CXX)
+project(TSSKSEFunctions VERSION 0.1.0 LANGUAGES CXX)
 
 # set the output path
-set(OUTPUT_FOLDER "<path/to/your/output/folder")
-
-# #
-# YOU DO NOT NEED TO EDIT ANYTHING BELOW HERE
-# #
+# set(OUTPUT_FOLDER "<path/to/your/output/folder")
 
 # Get all source files from src/ and include/
 file(GLOB_RECURSE SOURCES src/*.cpp src/*.h include/*.h)
