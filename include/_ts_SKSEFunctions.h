@@ -27,7 +27,7 @@ namespace _ts_SKSEFunctions {
 
 	void SetAngleZ(RE::TESObjectREFR* a_ref, float a_angleZ);
 
-	void MoveTo(RE::TESObjectREFR* a_object, const RE::TESObjectREFR* a_target, 
+	void MoveTo(RE::TESObjectREFR* a_object, RE::TESObjectREFR* a_target, 
 				float a_fOffsetX = 0.0f, float a_fOffsetY = 0.0f, float a_fOffsetZ = 0.0f);
 
 	float GetDistance(RE::TESObjectREFR* a_ref1, RE::TESObjectREFR* a_ref2);

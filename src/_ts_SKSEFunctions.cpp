@@ -167,7 +167,7 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 	
-	void MoveTo(RE::TESObjectREFR* a_object, const RE::TESObjectREFR* a_target, float a_fOffsetX, float a_fOffsetY, float a_fOffsetZ) {
+	void MoveTo(RE::TESObjectREFR* a_object, RE::TESObjectREFR* a_target, float a_fOffsetX, float a_fOffsetY, float a_fOffsetZ) {
 		if (!a_object) {
 			spdlog::error("_ts_SKSEFunctions - {}: a_object is None", __func__);
 			return;
@@ -176,6 +176,9 @@ namespace _ts_SKSEFunctions {
 			spdlog::error("_ts_SKSEFunctions - {}: a_target is None", __func__);
 			return;
 		}
+		a_object->MoveTo(a_target); //using MoveTo ensures that object is moved across Worldspaces if needed.
+		
+		// now process offset
 		RE::NiPoint3 pos = a_target->GetPosition();
 		a_object->SetPosition(pos.x + a_fOffsetX , pos.y + a_fOffsetY, pos.z + a_fOffsetZ);
 	}
