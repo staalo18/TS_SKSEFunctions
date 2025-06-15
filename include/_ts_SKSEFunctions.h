@@ -64,9 +64,21 @@ namespace _ts_SKSEFunctions {
 
 	RE::Actor* GetCombatTarget(RE::Actor* a_actor);
 
-	void StartCombat(RE::Actor* a_actor, RE::Actor* a_target);
+	void UpdateCombatTarget(RE::Actor* a_actor, RE::Actor* a_target);
 
     std::vector<RE::Actor*> GetCombatMembers(const RE::Actor* a_actor);
+
+	// returns the angle between two RE::NiPoint3 vectors in degrees
+	float GetAngleBetweenVectors(const RE::NiPoint3& a, const RE::NiPoint3& b);
+
+	// returns the closest living actor in the camera direction within a certain angle tolerance (in degrees) and distance
+	// setting a_maxDistance < 0.0f will search for all actors that have their 3D loaded (ie maxDistance is ignored)
+	// excludeActors is a list of actors to exclude from the search
+	RE::Actor* FindClosestActorInCameraDirection(
+		float a_angleTolerance = 360.0f, 
+		float a_maxDistance = -1.0f,
+		const std::vector<RE::Actor*>& excludeActors = std::vector<RE::Actor*>());
+
 
 	// call a global papyrus function from C++
     template <class ... Args>

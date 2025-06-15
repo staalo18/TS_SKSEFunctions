@@ -580,14 +580,7 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	void StartCombat(RE::Actor* a_actor, RE::Actor* a_target) {
-
-		// TODO: Not yet working as expected
-		spdlog::error("_ts_SKSEFunctions - {}: Error - Not yet functional!", __func__);
-		return;
-
-/*
-
+	void UpdateCombatTarget(RE::Actor* a_actor, RE::Actor* a_target) {
 		if (!a_actor || !a_target) {
 			spdlog::error("_ts_SKSEFunctions - {}: a_actor or a_target is None", __func__);
 			return;
@@ -595,27 +588,117 @@ namespace _ts_SKSEFunctions {
 
 		auto* combatGroup = a_actor->GetCombatGroup();
 
-		if (!combatGroup) {
-			log::info("StartCombat - creating new combatGroup");
-			combatGroup = new RE::CombatGroup();
+		if (combatGroup) {
+			// Already in combat: switch target
+			combatGroup->targets.clear();
 
-			auto member = new RE::CombatMember;
-			member->memberHandle = a_actor->GetHandle();
-			combatGroup->members.push_back(*member);
-
-			auto target = new RE::CombatTarget;
-			target->targetHandle = a_target->GetHandle();
-			combatGroup->targets.push_back(*target);
+			RE::CombatTarget newTarget;
+			newTarget.targetHandle = a_target->GetHandle();
+			combatGroup->targets.push_back(newTarget);
 
 			a_actor->SetCombatGroup(combatGroup);
 			a_actor->GetActorRuntimeData().currentCombatTarget = a_target->GetHandle();
 			a_actor->UpdateCombat();
+			if (a_actor->GetActorRuntimeData().currentCombatTarget) {
+				spdlog::info("_ts_SKSEFunctions - {}: Switched combat target for actor {} to {}", __func__, a_actor->GetFormID(), a_actor->GetActorRuntimeData().currentCombatTarget.get()->GetFormID());
+			} else {
+				spdlog::warn("_ts_SKSEFunctions - {}: Failed to set combat target for actor {}", __func__, a_actor->GetFormID());
+			}
 		} else {
-			log::info("StartCombat - combatGroup exists");
+			spdlog::info("_ts_SKSEFunctions - {}: Actor {} is not in combat...", __func__, a_actor->GetFormID());
 		}
+/* Starting combat is not working as of now
+		// Not in combat: create new combat group and set target
+		auto* newCombatGroup = new RE::CombatGroup();
+		RE::CombatMember newMember;
+		newMember.memberHandle = a_actor->GetHandle();
+		newCombatGroup->members.push_back(newMember);
 
-		log::info("StartCombat - IsInCombat: {}", a_actor->IsInCombat()); */
+		RE::CombatTarget newTarget;
+		newTarget.targetHandle = a_target->GetHandle();
+		newCombatGroup->targets.push_back(newTarget);
+
+		a_actor->SetCombatGroup(newCombatGroup);
+		a_actor->GetActorRuntimeData().currentCombatTarget = a_target->GetHandle();
+		a_actor->UpdateCombat();
+		spdlog::info("_ts_SKSEFunctions - {}: Started combat for actor {} with target {}", __func__, a_actor->GetFormID(), a_target->GetFormID());
+*/		
 	}
+
+/******************************************************************************************/
+
+    float GetAngleBetweenVectors(const RE::NiPoint3& a, const RE::NiPoint3& b) {
+        float dotProduct = a * b;
+        float magnitudeA = a.Length();
+        float magnitudeB = b.Length();
+        if (magnitudeA == 0 || magnitudeB == 0) {
+            return 0.0f; // Avoid division by zero
+        }
+        float cosTheta = dotProduct / (magnitudeA * magnitudeB);
+        // Clamp the value to the valid range for acos to avoid NaN due to floating point inaccuracies
+        cosTheta = std::clamp(cosTheta, -1.0f, 1.0f);
+        return 180.0f * std::acos(cosTheta) / 3.14159265f;
+    }
+
+/******************************************************************************************/
+
+    RE::Actor* FindClosestActorInCameraDirection(
+            float a_angleTolerance, 
+            float a_maxDistance,
+            const std::vector<RE::Actor*>& excludeActors) {
+
+        auto* playerActor = RE::PlayerCharacter::GetSingleton();
+        auto* processLists = RE::ProcessLists::GetSingleton();
+        auto* playerCamera = RE::PlayerCamera::GetSingleton();
+
+        if (!playerActor) {
+            spdlog::error("_ts_SKSEFunctions - {}: PlayerActor is null", __func__);
+            return nullptr;
+        }
+        if (!processLists) {
+            spdlog::error("_ts_SKSEFunctions - {}: ProcessLists is null", __func__);
+            return nullptr;
+        }
+        if (!playerCamera) {
+            spdlog::error("_ts_SKSEFunctions - {}: PlayerCamera is null", __func__);
+            return nullptr;
+        }
+
+        auto cameraPos = playerCamera->pos;
+        auto playerPos = playerActor->GetPosition();
+
+        auto root = playerCamera->cameraRoot;
+        const auto& worldTransform = root->world; // RE::NiTransform
+
+        // The forward vector is the third column of the rotation matrix
+        RE::NiPoint3 cameraForward = worldTransform.rotate * RE::NiPoint3{ 0.0f, 1.0f, 0.0f };
+
+        RE::Actor* selectedActor = nullptr;
+        for (auto handle : processLists->highActorHandles) {
+            auto actor = handle.get().get();
+            if (actor
+                && std::find(excludeActors.begin(), excludeActors.end(), actor) == excludeActors.end() 
+                && actor->Get3D() 
+                && !actor->IsDead()
+                && (a_maxDistance <= 0.0f || actor->GetPosition().GetDistance(playerPos) <= a_maxDistance)) {
+
+                float fAngle = GetAngleBetweenVectors(actor->GetPosition() - cameraPos, cameraForward);
+
+                if (fAngle <= a_angleTolerance) {
+                    if (selectedActor) {
+spdlog::info("_ts_SKSEFunctions - {}: Checking actor: {}, angle = {}, distance = {}", __func__, actor->GetName(), fAngle, actor->GetPosition().GetDistance(playerPos));
+                        if (actor->GetPosition().GetDistance(playerPos) < selectedActor->GetPosition().GetDistance(playerPos)) {
+spdlog::info("_ts_SKSEFunctions - {}: New selected actor: {}, angle = {}, distance = {}", __func__, actor->GetName(), fAngle, actor->GetPosition().GetDistance(playerPos));
+                            selectedActor = actor;
+                        }
+                    } else {
+spdlog::info("_ts_SKSEFunctions - {}: First selected actor {}: angle = {}, distance = {}", __func__, actor->GetName(), fAngle, actor->GetPosition().GetDistance(playerPos));
+                        selectedActor = actor;
+                    }
+                }
+            }
+        }
+
+        return selectedActor;
+    }
 }
-
-
