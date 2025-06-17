@@ -9,19 +9,35 @@ project(TSSKSEFunctions VERSION 0.1.0 LANGUAGES CXX)
 # YOU DO NOT NEED TO EDIT ANYTHING BELOW HERE
 # #
 
-#set(OUTPUT_FOLDER "C:/Users/tom/AppData/Local/ModOrganizer/MO_SkyrimSE/mods/_DEV_TSPapyrusFunctions")
+option(ENABLE_SKYRIM_SE "Enable support for Skyrim SE in the dynamic runtime feature." ON)
+option(ENABLE_SKYRIM_AE "Enable support for Skyrim AE in the dynamic runtime feature." ON)
+option(ENABLE_SKYRIM_VR "Enable support for Skyrim VR in the dynamic runtime feature." ON)
+set(BUILD_TESTS OFF)
 
 # Get all source files from src/ and include/
 file(GLOB_RECURSE SOURCES src/*.cpp src/*.h include/*.h)
 
-# Setup your SKSE plugin as an SKSE plugin!
-find_package(CommonLibSSE CONFIG REQUIRED)
-#add_commonlibsse_plugin(${PROJECT_NAME} SOURCES plugin.cpp) # <--- specifies plugin.cpp
-add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${SOURCES})
+# --- CommonLibSSE: Use local path from environment variable ---
+set(COMMONLIBSSE_PATH $ENV{CommonLibSSEPath_NG})
+
+if(NOT COMMONLIBSSE_PATH)
+    message(FATAL_ERROR "CommonLibSSEPath_NG environment variable is not set!")
+endif()
+
+add_subdirectory("$ENV{CommonLibSSEPath_NG}" CommonLibSSE EXCLUDE_FROM_ALL)
+
+# Add your SKSE plugin target
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/PCH.h) # <--- PCH.h is required!
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
+
+find_package(spdlog CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
+
+# Link to CommonLibSSE (adjust the library name if needed)
+target_link_libraries(${PROJECT_NAME} PRIVATE CommonLibSSE::CommonLibSSE)
 
 # Include inih for .ini files
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")

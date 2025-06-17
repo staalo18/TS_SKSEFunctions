@@ -645,7 +645,10 @@ namespace _ts_SKSEFunctions {
     RE::Actor* FindClosestActorInCameraDirection(
             float a_angleTolerance, 
             float a_maxDistance,
+			bool a_excludeAllies,
             const std::vector<RE::Actor*>& excludeActors) {
+
+		spdlog::info("_ts_SKSEFunctions - {}", __func__);
 
         auto* playerActor = RE::PlayerCharacter::GetSingleton();
         auto* processLists = RE::ProcessLists::GetSingleton();
@@ -664,7 +667,7 @@ namespace _ts_SKSEFunctions {
             return nullptr;
         }
 
-        auto cameraPos = playerCamera->pos;
+        auto cameraPos = playerCamera->cameraRoot->world.translate;
         auto playerPos = playerActor->GetPosition();
 
         auto root = playerCamera->cameraRoot;
@@ -680,6 +683,7 @@ namespace _ts_SKSEFunctions {
                 && std::find(excludeActors.begin(), excludeActors.end(), actor) == excludeActors.end() 
                 && actor->Get3D() 
                 && !actor->IsDead()
+				&& !(a_excludeAllies && actor->GetFactionReaction(playerActor) == RE::FIGHT_REACTION::kAlly)
                 && (a_maxDistance <= 0.0f || actor->GetPosition().GetDistance(playerPos) <= a_maxDistance)) {
 
                 float fAngle = GetAngleBetweenVectors(actor->GetPosition() - cameraPos, cameraForward);

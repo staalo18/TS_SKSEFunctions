@@ -77,6 +77,7 @@ namespace _ts_SKSEFunctions {
 	RE::Actor* FindClosestActorInCameraDirection(
 		float a_angleTolerance = 360.0f, 
 		float a_maxDistance = -1.0f,
+		bool a_excludeAllies = true,
 		const std::vector<RE::Actor*>& excludeActors = std::vector<RE::Actor*>());
 
 
