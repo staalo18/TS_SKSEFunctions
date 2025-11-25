@@ -642,13 +642,127 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
+	float GetAngleZ(const RE::NiPoint3& a_from, const RE::NiPoint3& a_to)
+	{
+		const auto x = a_to.x - a_from.x;
+		const auto y = a_to.y - a_from.y;
+
+		return atan2(x, y);
+	}
+
+/******************************************************************************************/
+
+	float GetCameraYaw() {
+		auto playerCamera = RE::PlayerCamera::GetSingleton();
+		if (playerCamera && playerCamera->cameraRoot) {
+			RE::NiNode* root = playerCamera->cameraRoot.get();
+			if (root) {
+				auto forwardVector = root->world.rotate.GetVectorZ();
+				float cameraYaw = NormalRelativeAngle(std::atan2(forwardVector.x, forwardVector.y));
+
+				float cameraPlayerDirection = GetAngleZ(GetCameraPos(), RE::PlayerCharacter::GetSingleton()->GetPosition());
+
+				if (fabs(NormalRelativeAngle(cameraPlayerDirection - cameraYaw)) > 0.9*PI) {
+					// in case the camera representation is flipped compared to Skyrim convention, align it with player direction
+					// look up "quaternion double cover" to learn more about this
+					cameraYaw = NormalRelativeAngle(cameraYaw + PI);
+				}
+
+				return cameraYaw;
+			}
+		}
+		return 0.0f;
+	}
+
+/******************************************************************************************/
+
+	float GetCameraPitch() {
+		auto playerCamera = RE::PlayerCamera::GetSingleton();
+		if (playerCamera && playerCamera->cameraRoot) {
+			RE::NiNode* root = playerCamera->cameraRoot.get();
+			if (root) {
+				auto forwardVector = root->world.rotate.GetVectorZ();
+				auto upVector = root->world.rotate.GetVectorY();
+
+				float cameraPitch = NormalRelativeAngle( 0.5f*PI - std::atan2(forwardVector.z, 
+					std::sqrt(forwardVector.x * forwardVector.x + forwardVector.y * forwardVector.y)));
+
+				if (upVector.z < 0) {
+					// Camera is upside down due to quaternion flip
+					cameraPitch = -cameraPitch;
+				}
+
+				return cameraPitch;
+			}
+		}
+		return 0.0f;
+	}
+
+/******************************************************************************************/
+// Below functions are from 'True Directional Movement':
+// https://github.com/ersh1/TrueDirectionalMovement
+// All credits go to the original author Ersh!
+/******************************************************************************************/
+
+	RE::NiPoint3 GetCameraPos()
+	{
+		auto player = RE::PlayerCharacter::GetSingleton();
+		auto playerCamera = RE::PlayerCamera::GetSingleton();
+		RE::NiPoint3 ret;
+
+		if (playerCamera->currentState->id == RE::CameraState::kFirstPerson ||
+			playerCamera->currentState->id == RE::CameraState::kThirdPerson ||
+			playerCamera->currentState->id == RE::CameraState::kMount ||
+			playerCamera->currentState->id == RE::CameraState::kDragon)
+		{
+			RE::NiNode* root = playerCamera->cameraRoot.get();
+			if (root) {
+				ret.x = root->world.translate.x;
+				ret.y = root->world.translate.y;
+				ret.z = root->world.translate.z;
+			}
+		} else {
+			RE::NiPoint3 playerPos = player->GetLookingAtLocation();
+
+			ret.z = playerPos.z;
+			ret.x = player->GetPositionX();
+			ret.y = player->GetPositionY();
+		}
+
+		return ret;
+	}
+
+/******************************************************************************************/
+
+	float NormalAbsoluteAngle(float a_angle)
+	{
+		while (a_angle < 0)
+			a_angle += 2.f*PI;
+		while (a_angle > 2.f*PI)
+			a_angle -= 2.f*PI;
+		return a_angle;
+	}
+
+/******************************************************************************************/
+
+	float NormalRelativeAngle(float a_angle)
+	{
+		while (a_angle > PI)
+			a_angle -= 2.f*PI;
+		while (a_angle < -PI)
+			a_angle += 2.f*PI;
+		return a_angle;
+	}
+
+
+// End True Directional Movement functions
+/******************************************************************************************/
+
     RE::Actor* FindClosestActorInCameraDirection(
             float a_angleTolerance, 
             float a_maxDistance,
 			bool a_excludeAllies,
             const std::vector<RE::Actor*>& excludeActors) {
-
-		spdlog::info("_ts_SKSEFunctions - {}", __func__);
 
         auto* playerActor = RE::PlayerCharacter::GetSingleton();
         auto* processLists = RE::ProcessLists::GetSingleton();

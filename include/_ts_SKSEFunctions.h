@@ -6,6 +6,7 @@
 #include <thread>
 #include <future>
 
+#define PI 3.1415926535f
 
 namespace _ts_SKSEFunctions {
 
@@ -70,6 +71,38 @@ namespace _ts_SKSEFunctions {
 
 	// returns the angle between two RE::NiPoint3 vectors in degrees
 	float GetAngleBetweenVectors(const RE::NiPoint3& a, const RE::NiPoint3& b);
+
+	float GetCameraYaw();
+
+	float GetCameraPitch();
+	
+	float GetAngleZ(const RE::NiPoint3& a_from, const RE::NiPoint3& a_to);
+
+	/******************************************************************************************/
+	// Below functions are from 'True Directional Movement':
+	// https://github.com/ersh1/TrueDirectionalMovement
+	// All credits go to the original author Ersh!
+
+	RE::NiPoint3 GetCameraPos();
+
+	float NormalAbsoluteAngle(float a_angle);
+
+	float NormalRelativeAngle(float a_angle);
+	
+	[[nodiscard]] inline float InterpEaseIn(const float& A, const float& B, float alpha, float exp)
+	{
+		float const modifiedAlpha = std::pow(alpha, exp);
+		return std::lerp(A, B, modifiedAlpha);
+	}
+
+static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).address();                 // 2F6B94C, 30064CC
+
+	[[nodiscard]] inline float GetRealTimeDeltaTime()
+	{
+		return *g_deltaTimeRealTime;
+	}
+	// End True Directional Movement functions
+	/******************************************************************************************/
 
 	// returns the closest living actor in the camera direction within a certain angle tolerance (in degrees) and distance
 	// setting a_maxDistance < 0.0f will search for all actors that have their 3D loaded (ie maxDistance is ignored)
