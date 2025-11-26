@@ -653,6 +653,8 @@ namespace _ts_SKSEFunctions {
 /******************************************************************************************/
 
 	float GetCameraYaw() {
+		// Only reliable if camera is not in firstperson state!
+		// Alternative is to use GetYaw() function, with the cameraState's rotation quaternion
 		auto playerCamera = RE::PlayerCamera::GetSingleton();
 		if (playerCamera && playerCamera->cameraRoot) {
 			RE::NiNode* root = playerCamera->cameraRoot.get();
@@ -662,7 +664,7 @@ namespace _ts_SKSEFunctions {
 
 				float cameraPlayerDirection = GetAngleZ(GetCameraPos(), RE::PlayerCharacter::GetSingleton()->GetPosition());
 
-				if (fabs(NormalRelativeAngle(cameraPlayerDirection - cameraYaw)) > 0.9*PI) {
+				if (fabs(NormalRelativeAngle(cameraPlayerDirection - cameraYaw)) > 0.9*PI) { // DOES NOT WORK for firstperson state!s
 					// in case the camera representation is flipped compared to Skyrim convention, align it with player direction
 					// look up "quaternion double cover" to learn more about this
 					cameraYaw = NormalRelativeAngle(cameraYaw + PI);

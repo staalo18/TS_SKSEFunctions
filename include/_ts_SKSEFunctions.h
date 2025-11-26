@@ -78,6 +78,17 @@ namespace _ts_SKSEFunctions {
 	
 	float GetAngleZ(const RE::NiPoint3& a_from, const RE::NiPoint3& a_to);
 
+	[[nodiscard]] inline float GetYaw(const RE::NiQuaternion a_rotation)
+	{
+		// will not produce reliable results near the gimbal lock (pitch approaching +/- PI/2, ie straight upwards or downwards pitch)
+		return -std::atan2(2.0f * (a_rotation.w * a_rotation.z + a_rotation.x * a_rotation.y), 1.0f - 2.0f * (a_rotation.y * a_rotation.y + a_rotation.z * a_rotation.z));
+	}
+
+	[[nodiscard]] inline float GetPitch(const RE::NiQuaternion a_rotation)
+	{
+		return std::atan2(2.0f * (a_rotation.w * a_rotation.x + a_rotation.y * a_rotation.z), 1.0f - 2.0f * (a_rotation.x * a_rotation.x + a_rotation.y * a_rotation.y));
+	}
+
 	/******************************************************************************************/
 	// Below functions are from 'True Directional Movement':
 	// https://github.com/ersh1/TrueDirectionalMovement
