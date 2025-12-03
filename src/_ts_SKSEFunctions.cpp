@@ -760,6 +760,63 @@ namespace _ts_SKSEFunctions {
 // End True Directional Movement functions
 /******************************************************************************************/
 
+    float SCurveFromLinear(float x, float x1, float x2) {
+		// This function modifies a linear input x in [0,1] into a smooth s-shape response in [0,1]
+		// with quadratic ease-in from 0 to x1, linear section from x1 to x2, and quadratic ease-out from x2 to 1
+		// x1 and x2 must be in [0,1] and x2 >= x1
+		// if x1 == x2, the function reduces to a standard smoothstep function
+
+		x1 = std::clamp(x1, 0.0f, 1.0f);
+        x2 = std::clamp(x2, 0.0f, 1.0f);
+        x = std::clamp(x, 0.0f, 1.0f);
+        
+        if (x2 < x1) {
+            x2 = x1;
+        }
+        
+        if (x1 == x2) {
+	        // Handle edge case where x1 == x2 (no linear section)
+            // Simple smoothstep: 3x^2 - 2x^3
+            return 3.0f * x * x - 2.0f * x * x * x;
+        }
+        
+        // Calculate the slope of the linear section
+        // We need to ensure f(1) = 1 and smooth connections at x1 and x2
+        float m = 1.0f / (x2 - x1 + 0.5f * x1 + 0.5f * (1.0f - x2));
+        
+        if (x <= x1) {
+            // Phase 1: Quadratic ease-in (0 to x1)
+            // f(x) = a*x^2
+            // f'(x1) = m -> 2*a*x1 = m -> a = m/(2*x1)
+            if (x1 == 0.0f) return 0.0f;
+            
+            float a = m / (2.0f * x1);
+            return a * x * x;
+            
+        } else if (x <= x2) {
+            // Phase 2: Linear section (x1 to x2)
+            // f(x) = m*x + c
+            // Must pass through (x1, f(x1))
+            float f_x1 = (m / (2.0f * x1)) * x1 * x1;
+            float c = f_x1 - m * x1;
+            return m * x + c;
+            
+        } else {
+            // Phase 3: Quadratic ease-out (x2 to 1)
+            // Use form: f(x) = 1 - a*(1-x)^2
+            // This ensures f(1) = 1
+            // f'(x) = 2*a*(1-x)
+            // f'(x2) = m -> 2*a*(1-x2) = m -> a = m/(2*(1-x2))
+            
+            if (x2 == 1.0f) return 1.0f;
+            
+            float a = m / (2.0f * (1.0f - x2));
+            return 1.0f - a * (1.0f - x) * (1.0f - x);
+        }
+    }
+
+/******************************************************************************************/
+
     RE::Actor* FindClosestActorInCameraDirection(
             float a_angleTolerance, 
             float a_maxDistance,

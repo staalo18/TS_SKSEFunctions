@@ -115,6 +115,8 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 	// End True Directional Movement functions
 	/******************************************************************************************/
 
+	float SCurveFromLinear(float x, float x1, float x2);
+
 	// returns the closest living actor in the camera direction within a certain angle tolerance (in degrees) and distance
 	// setting a_maxDistance < 0.0f will search for all actors that have their 3D loaded (ie maxDistance is ignored)
 	// excludeActors is a list of actors to exclude from the search
