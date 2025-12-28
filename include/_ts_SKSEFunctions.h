@@ -89,6 +89,8 @@ namespace _ts_SKSEFunctions {
 		return std::atan2(2.0f * (a_rotation.w * a_rotation.x + a_rotation.y * a_rotation.z), 1.0f - 2.0f * (a_rotation.x * a_rotation.x + a_rotation.y * a_rotation.y));
 	}
 
+	RE::NiPoint3 GetCameraRotation();
+	
 	/******************************************************************************************/
 	// Below functions are from 'True Directional Movement':
 	// https://github.com/ersh1/TrueDirectionalMovement
@@ -114,6 +116,8 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 	}
 	// End True Directional Movement functions
 	/******************************************************************************************/
+
+	float ApplyEasing(float t, bool easeIn, bool easeOut);
 
 	float SCurveFromLinear(float x, float x1, float x2);
 

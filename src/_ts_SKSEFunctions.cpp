@@ -654,7 +654,7 @@ namespace _ts_SKSEFunctions {
 
 	float GetCameraYaw() {
 		// Only reliable if camera is not in firstperson state!
-		// Alternative is to use GetYaw() function, with the cameraState's rotation quaternion
+		// Alternative is to use GetCameraRotation() function
 		auto playerCamera = RE::PlayerCamera::GetSingleton();
 		if (playerCamera && playerCamera->cameraRoot) {
 			RE::NiNode* root = playerCamera->cameraRoot.get();
@@ -701,6 +701,51 @@ namespace _ts_SKSEFunctions {
 	}
 
 /******************************************************************************************/
+	
+	RE::NiPoint3 GetCameraRotation() {
+		RE::NiPoint3 rotation;
+		rotation.x = 0.0f; // Pitch
+		rotation.y = 0.0f; // Roll is not computed
+		rotation.z = 0.0f; // Yaw
+
+		auto* playerCamera = RE::PlayerCamera::GetSingleton();
+
+		if (playerCamera && playerCamera->currentState) {
+			if (playerCamera->currentState->id == RE::CameraState::kFree) {
+				RE::FreeCameraState* cameraState = static_cast<RE::FreeCameraState*>(playerCamera->currentState.get());
+				
+				if (cameraState) {
+					rotation.x = cameraState->rotation.x;
+					rotation.z = cameraState->rotation.y;
+				}
+			}  
+			else if (playerCamera->currentState->id == RE::CameraState::kThirdPerson ||
+					playerCamera->currentState->id == RE::CameraState::kMount ||
+					playerCamera->currentState->id == RE::CameraState::kDragon) {
+				RE::ThirdPersonState* cameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
+				
+				if (cameraState) {
+					rotation.x = -GetPitch(cameraState->rotation);
+					rotation.z = GetYaw(cameraState->rotation);
+				}
+			} else if (playerCamera->currentState->id == RE::CameraState::kFirstPerson) {
+				RE::FirstPersonState* cameraState = static_cast<RE::FirstPersonState*>(playerCamera->currentState.get());
+				
+				if (cameraState) {
+					RE::PlayerCharacter* player = RE::PlayerCharacter::GetSingleton();
+					RE::NiPoint3 angle;
+					cameraState->firstPersonCameraObj->world.rotate.ToEulerAnglesXYZ(angle);
+
+					rotation.x = player->data.angle.x - angle.x;
+					rotation.z = player->data.angle.z;
+				}
+			}
+		}
+
+		return rotation;
+	}
+
+/******************************************************************************************/
 // Below functions are from 'True Directional Movement':
 // https://github.com/ersh1/TrueDirectionalMovement
 // All credits go to the original author Ersh!
@@ -712,6 +757,10 @@ namespace _ts_SKSEFunctions {
 		auto playerCamera = RE::PlayerCamera::GetSingleton();
 		RE::NiPoint3 ret;
 
+		if (!player || !playerCamera || !playerCamera->currentState) {
+			return ret;
+		}
+
 		if (playerCamera->currentState->id == RE::CameraState::kFirstPerson ||
 			playerCamera->currentState->id == RE::CameraState::kThirdPerson ||
 			playerCamera->currentState->id == RE::CameraState::kMount ||
@@ -719,9 +768,12 @@ namespace _ts_SKSEFunctions {
 		{
 			RE::NiNode* root = playerCamera->cameraRoot.get();
 			if (root) {
-				ret.x = root->world.translate.x;
-				ret.y = root->world.translate.y;
-				ret.z = root->world.translate.z;
+				ret = root->world.translate;
+			}
+		} else if(playerCamera->currentState->id == RE::CameraState::kFree) {
+			RE::FreeCameraState* cameraState = static_cast<RE::FreeCameraState*>(playerCamera->currentState.get());			
+			if (cameraState) {
+				ret = cameraState->translation;
 			}
 		} else {
 			RE::NiPoint3 playerPos = player->GetLookingAtLocation();
@@ -759,6 +811,21 @@ namespace _ts_SKSEFunctions {
 
 // End True Directional Movement functions
 /******************************************************************************************/
+
+    float ApplyEasing(float t, bool easeIn, bool easeOut) {
+        if (easeIn && easeOut) {
+            // Smoothstep (both ease in and out)
+            return t * t * (3.0f - 2.0f * t);
+        } else if (easeIn) {
+            // Ease in only (accelerate)
+            return t * t;
+        } else if (easeOut) {
+            // Ease out only (decelerate)
+            return 1.0f - (1.0f - t) * (1.0f - t);
+        }
+        // No easing
+        return t;
+    }
 
     float SCurveFromLinear(float x, float x1, float x2) {
 		// This function modifies a linear input x in [0,1] into a smooth s-shape response in [0,1]
