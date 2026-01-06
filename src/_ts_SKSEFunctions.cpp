@@ -686,8 +686,8 @@ namespace _ts_SKSEFunctions {
 				auto forwardVector = root->world.rotate.GetVectorZ();
 				auto upVector = root->world.rotate.GetVectorY();
 
-				float cameraPitch = NormalRelativeAngle( 0.5f*PI - std::atan2(forwardVector.z, 
-					std::sqrt(forwardVector.x * forwardVector.x + forwardVector.y * forwardVector.y)));
+				float cameraPitch = NormalRelativeAngle(std::atan2(forwardVector.z, 
+					std::sqrt(forwardVector.x * forwardVector.x + forwardVector.y * forwardVector.y)) - 0.5f*PI);
 
 				if (upVector.z < 0) {
 					// Camera is upside down due to quaternion flip
