@@ -501,6 +501,32 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
+	float GetLandHeightWithWater(RE::NiPoint3& a_pos)
+	{
+		/* Not yet tested: possibly only works in for coords wich lie in cells that are currently attached? Otherwise returns height -2048.0*/
+		float heightOut = -1;
+
+		if (auto TES = RE::TES::GetSingleton()) {
+			TES->GetLandHeight(a_pos, heightOut);
+	
+            auto* cell = TES->GetCell(a_pos);
+            if (!cell) {
+                log::warn("{}: Cell not found for position ({}, {}, {})", __FUNCTION__, a_pos.x, a_pos.y, a_pos.z);
+                return heightOut;
+            }
+
+            auto waterHeight = cell->GetExteriorWaterHeight();
+
+			if (heightOut < waterHeight) {
+				heightOut = waterHeight;
+			}
+		}
+
+		return heightOut;
+	}
+
+/******************************************************************************************/
+
 	bool ClearCombatTargets(RE::Actor* a_actor)
 	{
 		if (!a_actor) {
