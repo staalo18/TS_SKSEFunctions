@@ -1,5 +1,6 @@
 #include "SKSE/logger.h"
 #include "_ts_SKSEFunctions.h"
+#include "Offsets.h"
 
 namespace _ts_SKSEFunctions {
 
@@ -906,6 +907,165 @@ namespace _ts_SKSEFunctions {
             float a = m / (2.0f * (1.0f - x2));
             return 1.0f - a * (1.0f - x) * (1.0f - x);
         }
+    }
+
+/******************************************************************************************/
+    std::vector<RE::NiPointer<RE::NiAVObject>> GetAllTargetPoints(RE::Actor* a_actor) {
+        std::vector<RE::NiPointer<RE::NiAVObject>> targetPoints;
+
+        if (!a_actor) {
+            return targetPoints;
+        }
+
+        auto race = a_actor->GetRace();
+        if (!race) {
+            return targetPoints;
+        }
+
+        RE::BGSBodyPartData* bodyPartData = race->bodyPartData;
+        if (!bodyPartData) {
+            return targetPoints;
+        }
+
+        auto actor3D = a_actor->Get3D2();
+        if (!actor3D) {
+            return targetPoints;
+        }
+
+        // Iterate through all body parts
+        for (std::uint32_t i = 0; i < RE::BGSBodyPartDefs::LIMB_ENUM::kTotal; ++i) {
+            RE::BGSBodyPart* bodyPart = bodyPartData->parts[i];
+            if (bodyPart && bodyPart->targetName.c_str()) {
+                auto targetPoint = RE::NiPointer<RE::NiAVObject>(NiAVObject_LookupBoneNodeByName(actor3D, bodyPart->targetName, true));
+                if (targetPoint) {
+                    targetPoints.push_back(targetPoint);
+                }
+            }
+        }
+
+        return targetPoints;
+    }
+
+/******************************************************************************************/
+    
+	float GetCrosshairIntersectionDistance(RE::Actor* a_actor, float a_maxScanAngle) {
+        if (!a_actor) {
+            return FLT_MAX;
+        }
+
+        auto* playerActor = RE::PlayerCharacter::GetSingleton();
+        auto* playerCamera = RE::PlayerCamera::GetSingleton();
+        if (!playerActor|| !playerCamera) {
+            return FLT_MAX;
+        }
+
+        auto cameraPos = playerCamera->cameraRoot->world.translate;
+        auto playerPos = playerActor->GetPosition();
+        const auto& worldTransform = playerCamera->cameraRoot->world;
+        
+        // The forward vector is the third column of the rotation matrix
+        RE::NiPoint3 cameraForward = worldTransform.rotate * RE::NiPoint3{ 0.0f, 1.0f, 0.0f };
+        cameraForward.Unitize();
+
+
+        // Strategy 1: Check if any target point (body part) is within the scan cone
+        // This works well at medium-to-long distances, also when the actor is hidden by other geometry
+        auto targetPoints = GetAllTargetPoints(a_actor);
+        float closestPointDistance = FLT_MAX;
+        
+        for (const auto& targetPoint : targetPoints) {
+            if (!targetPoint) {
+                continue;
+            }
+            
+            RE::NiPoint3 pointPos = targetPoint->world.translate;
+            float fAngleForward = _ts_SKSEFunctions::GetAngleBetweenVectors(pointPos - cameraPos, cameraForward);
+            
+            if (fabsf(fAngleForward) <= a_maxScanAngle || a_maxScanAngle <= 0.0f) {
+                float distanceToPlayer = pointPos.GetDistance(playerPos);
+                if (distanceToPlayer < closestPointDistance) {
+                    closestPointDistance = distanceToPlayer;
+                }
+            }
+        }
+        
+        if (closestPointDistance < FLT_MAX) {
+            return closestPointDistance;
+        }
+
+        // Strategy 2: Ray-sphere intersection with actor's bounding sphere
+        // This is used as fallback when close to actor and no body parts are in cone
+        auto actor3D = a_actor->Get3D();
+        if (!actor3D) {
+            return FLT_MAX;
+        }
+
+        auto& boundingSphere = actor3D->worldBound;
+        RE::NiPoint3 sphereCenter = boundingSphere.center;
+        float sphereRadius = boundingSphere.radius;
+
+        RE::NiPoint3 toSphere = sphereCenter - cameraPos;
+        float projectionLength = toSphere.Dot(cameraForward);
+        
+        // Skip if sphere is behind camera
+        if (projectionLength < 0) {
+            return FLT_MAX;
+        }
+        
+        // Find closest point on ray to sphere center
+        RE::NiPoint3 closestPointOnRay = cameraPos + (cameraForward * projectionLength);
+        float distanceToCenter = closestPointOnRay.GetDistance(sphereCenter);
+        
+        // Check if ray intersects the bounding sphere
+        if (distanceToCenter <= sphereRadius) {
+            // Calculate actual intersection distance (entry point)
+            return (projectionLength - sqrtf(sphereRadius * sphereRadius - distanceToCenter * distanceToCenter));
+        }
+
+        return FLT_MAX;
+    }
+	
+/******************************************************************************************/
+
+    RE::Actor* GetCrosshairTarget(float a_maxTargetDistance, float a_maxTargetScanAngle, std::vector<RE::Actor*> a_excludeActors) {
+        auto* playerActor = RE::PlayerCharacter::GetSingleton();
+        auto* processLists = RE::ProcessLists::GetSingleton();
+
+        if (!playerActor) {
+            log::error("TTE - {}: PlayerActor is null", __func__);
+            return nullptr;
+        }
+        if (!processLists) {
+            log::error("TTE - {}: ProcessLists is null", __func__);
+            return nullptr;
+        }
+
+        RE::Actor* selectedActor = nullptr;
+        float closestDistance = a_maxTargetDistance > 0.0f ? a_maxTargetDistance : FLT_MAX;
+        
+        for (auto handle : processLists->highActorHandles) {
+            auto actor = handle.get().get();
+            if (!actor || !actor->Get3D()) {
+                continue;
+            }
+            
+            if (std::find(a_excludeActors.begin(), a_excludeActors.end(), actor) != a_excludeActors.end()) {
+                continue;
+            }
+            
+            if (a_maxTargetDistance > 0.0f && actor->GetPosition().GetDistance(playerActor->GetPosition()) > a_maxTargetDistance) {
+                continue;
+            }
+
+            // Check if crosshair intersects this actor
+            float intersectionDistance = GetCrosshairIntersectionDistance(actor, a_maxTargetScanAngle);
+            if (intersectionDistance < closestDistance) {
+                closestDistance = intersectionDistance;
+                selectedActor = actor;
+            }
+        }
+
+        return selectedActor;
     }
 
 /******************************************************************************************/

@@ -133,6 +133,16 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 		const std::vector<RE::Actor*>& excludeActors = std::vector<RE::Actor*>());
 
 
+	// returns the closest actor under the crosshair within a certain distance and scan angle
+	// setting a_maxTargetDistance = 0.0f will search for all actors that have their 3D loaded (ie maxTargetDistance is ignored)
+	// a_maxTargetScanAngle is the maximum angle (in degrees) from the center of the crosshair to scan for actors
+	// a_excludeActors is a list of actors to exclude from the search
+	// Note: this function also finds actors that are occluded from sight (eg behind walls)
+	RE::Actor* GetCrosshairTarget(float a_maxTargetDistance = 0.0f, float a_maxTargetScanAngle = 7.0f, std::vector<RE::Actor*> a_excludeActors = {});
+
+	// gets all target points from the actor's 3D
+	std::vector<RE::NiPointer<RE::NiAVObject>> GetAllTargetPoints(RE::Actor* a_actor);
+
 	// call a global papyrus function from C++
     template <class ... Args>
 	bool CallPapyrusFunction(std::string_view a_functionClass, std::string_view a_function, Args... a_args) {
