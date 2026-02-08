@@ -90,6 +90,13 @@ namespace _ts_SKSEFunctions {
 	{
 		return std::atan2(2.0f * (a_rotation.w * a_rotation.x + a_rotation.y * a_rotation.z), 1.0f - 2.0f * (a_rotation.x * a_rotation.x + a_rotation.y * a_rotation.y));
 	}
+    
+	RE::NiPointer<RE::NiAVObject> GetTargetPoint(RE::Actor* a_actor, RE::BGSBodyPartDefs::LIMB_ENUM a_bodyPart);
+
+	void GetBodyPartCoordinateFrame(RE::Actor* a_actor, RE::BGSBodyPartDefs::LIMB_ENUM a_bodyPart,
+                                     RE::NiPoint3& a_forward, RE::NiPoint3& a_right, RE::NiPoint3& a_up);
+
+    RE::NiPoint3 GetBodyPartRotation(RE::Actor* a_actor, RE::BGSBodyPartDefs::LIMB_ENUM a_bodyPart);
 
 	RE::NiPoint3 GetCameraRotation();
 	

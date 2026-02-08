@@ -26,6 +26,15 @@ endif()
 
 add_subdirectory("$ENV{CommonLibSSEPath_NG}" CommonLibSSE EXCLUDE_FROM_ALL)
 
+# --- ClibUtils: Use local path from environment variable ---
+set(CLIBUTILS_PATH $ENV{CLibUtilsPath})
+
+if(NOT CLIBUTILS_PATH)
+    message(FATAL_ERROR "CLibUtilsPath environment variable is not set!")
+endif()
+
+add_subdirectory("$ENV{CLibUtilsPath}" ClibUtils EXCLUDE_FROM_ALL)
+
 # Add your SKSE plugin target
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
@@ -38,6 +47,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
 
 # Link to CommonLibSSE (adjust the library name if needed)
 target_link_libraries(${PROJECT_NAME} PRIVATE CommonLibSSE::CommonLibSSE)
+
+# Link to CLibUtil (header-only interface library)
+target_link_libraries(${PROJECT_NAME} PRIVATE CLibUtil::CLibUtil)
 
 # Include inih for .ini files
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")

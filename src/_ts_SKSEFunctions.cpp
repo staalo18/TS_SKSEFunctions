@@ -1,6 +1,7 @@
 #include "SKSE/logger.h"
 #include "_ts_SKSEFunctions.h"
 #include "Offsets.h"
+#include "CLIBUtil/EditorID.hpp"
 
 namespace _ts_SKSEFunctions {
 
@@ -676,6 +677,263 @@ namespace _ts_SKSEFunctions {
 
 		return atan2(x, y);
 	}
+
+/******************************************************************************************/
+
+    RE::NiPointer<RE::NiAVObject> GetTargetPoint(RE::Actor* a_actor, RE::BGSBodyPartDefs::LIMB_ENUM a_bodyPart) {
+        RE::NiPointer<RE::NiAVObject> targetPoint = nullptr;
+
+        if (!a_actor) {
+            return nullptr;
+        }
+
+        auto race = a_actor->GetRace();
+        if (!race) {
+            return nullptr;
+        }
+
+        RE::BGSBodyPartData* bodyPartData = race->bodyPartData;
+        if (!bodyPartData) {
+            return nullptr;
+        }
+
+        auto actor3D = a_actor->Get3D2();
+        if (!actor3D) {
+            return nullptr;
+        }
+    
+        RE::BGSBodyPart* bodyPart = bodyPartData->parts[a_bodyPart];
+
+		if (bodyPart) {
+            targetPoint = RE::NiPointer<RE::NiAVObject>(NiAVObject_LookupBoneNodeByName(actor3D, bodyPart->targetName, true));
+        }
+
+        return targetPoint;
+    }	
+
+ /******************************************************************************************/
+
+	 void GetBodyPartCoordinateFrame(RE::Actor* a_actor, RE::BGSBodyPartDefs::LIMB_ENUM a_bodyPart,
+                                     RE::NiPoint3& a_forward, RE::NiPoint3& a_right, RE::NiPoint3& a_up) {
+        // Different races use different rotation matrix columns for their forward direction
+        // This mapping is based on how each body part data defines its local coordinate system
+		// Note: The coordinate frame mapping can be different for different body parts of the same race
+        //       So far this function only supports the mapping for kHead and kTorso
+
+		a_forward = RE::NiPoint3(0.0f, 1.0f, 0.0f);  // Default forward
+		a_right = RE::NiPoint3(1.0f, 0.0f, 0.0f);    // Default right
+		a_up = RE::NiPoint3(0.0f, 0.0f, 1.0f);       // Default up
+        
+        if (!a_actor) {
+			log::warn("{}: a_actor is null", __FUNCTION__);
+            return;
+        }
+
+		auto targetPoint = GetTargetPoint(a_actor, a_bodyPart);
+		if (!targetPoint){
+			log::warn("{}: targetPoint is null for body part {}", __FUNCTION__, static_cast<int>(a_bodyPart));
+            return;
+		}
+
+        const RE::NiMatrix3& rotMatrix = targetPoint->world.rotate;
+        RE::NiPoint3 rotationX = rotMatrix.GetVectorX();
+        RE::NiPoint3 rotationY = rotMatrix.GetVectorY();
+        RE::NiPoint3 rotationZ = rotMatrix.GetVectorZ();
+
+        // Default: right=+X, forward=+Y, up=+Z (standard humanoid)
+        a_forward = rotationY;
+        a_right = rotationX;
+        a_up = rotationZ;
+
+        auto race = a_actor->GetRace();
+        if (!race || !race->bodyPartData) {
+            return;
+        }
+        
+        auto bodyPartData = race->bodyPartData;
+        auto bodyPartEDID = clib_util::editorID::get_editorID(bodyPartData);
+        
+        if (a_bodyPart == RE::BGSBodyPartDefs::LIMB_ENUM::kHead) {
+            // +X: Right / +Y: Forward / +Z: Up
+            if (bodyPartEDID == "AtronachFlameBodyPartData" ||
+                bodyPartEDID == "AtronachFrostBodyPartData" ||
+                bodyPartEDID == "AtronachStormBodyPartData" ||
+                bodyPartEDID == "BenthicLurkerBodyPartData" ||
+                bodyPartEDID == "DefaultBodyPartData" ||
+                bodyPartEDID == "DLC2NetchBodyPartData" ||
+                bodyPartEDID == "DLC2RieklingBodyPartData" ||
+                bodyPartEDID == "DragonPriestBodyPartData" ||
+                bodyPartEDID == "DraugrBodyPartData" ||
+                bodyPartEDID == "DwarvenBallistaCenturionBodyPartData" ||
+                bodyPartEDID == "DwarvenSpiderPartData" ||
+                bodyPartEDID == "FalmerBodyPartData" ||
+                bodyPartEDID == "GargoyleBodyPartData" ||
+                bodyPartEDID == "GiantBodyPartData" ||
+                bodyPartEDID == "HagravenBodyPartData" ||
+                bodyPartEDID == "MudcrabPartData" ||
+                bodyPartEDID == "SprigganBodyPartData" ||
+                bodyPartEDID == "TrollBodyPartData" ||
+                bodyPartEDID == "WerewolfBeastBodyPartData" ||
+                bodyPartEDID == "WispBodyPartData") {
+                a_forward = rotationY;
+                a_right = rotationX;
+                a_up = rotationZ;
+            }
+            // +X: Up / +Y: Forward / +Z: Left
+            else if (bodyPartEDID == "DLC2HMDaedraPartData" ||
+                     bodyPartEDID == "DLC2MountedRieklingBodyPartData" ||
+                     bodyPartEDID == "DLC2ScribBodyPartData" ||
+                     bodyPartEDID == "DwarvenSphereCenturionBodyPartData" ||
+                     bodyPartEDID == "FrostbiteSpiderPartData" ||
+                     bodyPartEDID == "SlaughterfishBodyPartData" ||
+                     bodyPartEDID == "WitchlightBodyPartData") {
+                a_forward = rotationY;
+                a_right = rotationZ;
+                a_up = rotationX;
+            }
+            // +X: Forward / +Y: Down / +Z: Left
+            else if (bodyPartEDID == "BearBodyPartData" ||
+                     bodyPartEDID == "ChaurusBodyPartData" ||
+                     bodyPartEDID == "CowBodyPartData" ||
+                     bodyPartEDID == "DLC2DragonBodyPartData" ||
+                     bodyPartEDID == "DragonBodyPartData" ||
+                     bodyPartEDID == "MammothBodyPartData" ||
+                     bodyPartEDID == "SabreCatBodyPartData") {
+                a_forward = rotationX;
+                a_right = -rotationZ;
+                a_up = -rotationY;
+            }
+            // +X: Right / +Y: Down / +Z: Forward
+            else if (bodyPartEDID == "ChaurusFlyerBodyPartData" ||
+                     bodyPartEDID == "ChickenBodyPartData" ||
+                     bodyPartEDID == "DeerBodyPartData" ||
+                     bodyPartEDID == "DogBodyPartData" ||
+                     bodyPartEDID == "DwarvenSteamCenturionBodyPartData" ||
+                     bodyPartEDID == "GoatBodyPartData" ||
+                     bodyPartEDID == "HareBodyPartData" ||
+                     bodyPartEDID == "HorseBodyPartData" ||
+                     bodyPartEDID == "SkeeverBodyPartData") {
+                a_forward = rotationZ;
+                a_right = rotationX;
+                a_up = -rotationY;
+            }
+            // +X: Backward / +Y: Right / +Z: Up
+            else if (bodyPartEDID == "IceWraithBodyPartData") {
+                a_forward = -rotationX;
+                a_right = rotationY;
+                a_up = rotationZ;
+            }
+            // +X: Right / +Y: Backwards / +Z: Down
+            else if (bodyPartEDID == "HorkerBodyPartData") {
+                a_forward = -rotationY;
+                a_right = rotationX;
+                a_up = -rotationZ;
+            }
+            else {
+                log::warn("{}: Unhandled head body part EDID '{}', using default coordinate frame", __FUNCTION__, bodyPartEDID);
+            }
+        } else if (a_bodyPart == RE::BGSBodyPartDefs::LIMB_ENUM::kTorso) {
+            // +X: Right / +Y: Forward / +Z: Up
+            if (bodyPartEDID == "AtronachFlameBodyPartData" ||
+                bodyPartEDID == "AtronachFrostBodyPartData" ||
+                bodyPartEDID == "AtronachStormBodyPartData" ||
+                bodyPartEDID == "BenthicLurkerBodyPartData" ||
+                bodyPartEDID == "DefaultBodyPartData" ||
+                bodyPartEDID == "DLC2NetchBodyPartData" ||
+                bodyPartEDID == "DLC2RieklingBodyPartData" ||
+                bodyPartEDID == "DragonPriestBodyPartData" ||
+                bodyPartEDID == "DraugrBodyPartData" ||
+                bodyPartEDID == "DwarvenBallistaCenturionBodyPartData" ||
+                bodyPartEDID == "DwarvenSpiderPartData" ||
+                bodyPartEDID == "DwarvenSteamCenturionBodyPartData" ||
+                bodyPartEDID == "FalmerBodyPartData" ||
+                bodyPartEDID == "GargoyleBodyPartData" ||
+                bodyPartEDID == "GiantBodyPartData" ||
+                bodyPartEDID == "HagravenBodyPartData" ||
+                bodyPartEDID == "MudcrabPartData" ||
+                bodyPartEDID == "SprigganBodyPartData" ||
+                bodyPartEDID == "TrollBodyPartData" ||
+                bodyPartEDID == "WerewolfBeastBodyPartData" ||
+                bodyPartEDID == "WitchlightBodyPartData") {
+                a_forward = rotationY;
+                a_right = rotationX;
+                a_up = rotationZ;
+            }
+            // +X: Up / +Y: Forward / +Z: Left
+            else if (bodyPartEDID == "DLC2DragonBodyPartData" ||
+                     bodyPartEDID == "DLC2HMDaedraPartData" ||
+                     bodyPartEDID == "DLC2MountedRieklingBodyPartData" ||
+                     bodyPartEDID == "DragonBodyPartData" ||
+                     bodyPartEDID == "SlaughterfishBodyPartData" ||
+                     bodyPartEDID == "WispBodyPartData") {
+                a_forward = rotationY;
+                a_right = rotationZ;
+                a_up = rotationX;
+            }
+            // +X: Forward / +Y: Down / +Z: Left
+            else if (bodyPartEDID == "BearBodyPartData" ||
+                     bodyPartEDID == "ChaurusBodyPartData" ||
+                     bodyPartEDID == "CowBodyPartData" ||
+                     bodyPartEDID == "DLC2ScribBodyPartData" ||
+                     bodyPartEDID == "DwarvenSphereCenturionBodyPartData" ||
+                     bodyPartEDID == "MammothBodyPartData" ||
+                     bodyPartEDID == "SabreCatBodyPartData") {
+                a_forward = rotationX;
+                a_right = -rotationZ;
+                a_up = -rotationY;
+            }
+            // +X: Right / +Y: Down / +Z: Forward
+            else if (bodyPartEDID == "ChaurusFlyerBodyPartData" ||
+                     bodyPartEDID == "ChickenBodyPartData" ||
+                     bodyPartEDID == "DeerBodyPartData" ||
+                     bodyPartEDID == "DogBodyPartData" ||
+                     bodyPartEDID == "HareBodyPartData" ||
+                     bodyPartEDID == "HorkerBodyPartData" ||
+                     bodyPartEDID == "HorseBodyPartData" ||
+                     bodyPartEDID == "GoatBodyPartData" ||
+                     bodyPartEDID == "SkeeverBodyPartData") {
+                a_forward = rotationZ;
+                a_right = rotationX;
+                a_up = -rotationY;
+            }
+            // +X: Backward / +Y: Right / +Z: Up
+            else if (bodyPartEDID == "IceWraithBodyPartData") {
+                a_forward = -rotationX;
+                a_right = rotationY;
+                a_up = rotationZ;
+            }
+            // +X: Backward / +Y: Up / +Z: Left
+            else if (bodyPartEDID == "FrostbiteSpiderPartData") {
+                a_forward = -rotationX;
+                a_right = rotationZ;
+                a_up = rotationY;
+            }
+            else {
+                log::warn("{}: Unhandled torso body part EDID '{}', using default coordinate frame", __FUNCTION__, bodyPartEDID);
+            }
+        } else {
+			log::warn("{}: Unsupported body part enum '{}', using default coordinate frame", __FUNCTION__, a_bodyPart);
+		}
+    }
+
+/******************************************************************************************/
+
+    RE::NiPoint3 GetBodyPartRotation(RE::Actor* a_actor, RE::BGSBodyPartDefs::LIMB_ENUM a_bodyPart) {
+        if (!a_actor) {
+			log::warn("{}: a_actor is null", __FUNCTION__);
+            return RE::NiPoint3{0.0f, 0.0f, 0.0f};
+        }
+
+        // Get forward direction based on race and body part type
+        RE::NiPoint3 forward, right, up;
+        GetBodyPartCoordinateFrame(a_actor, a_bodyPart, forward, right, up);
+
+        float yaw = std::atan2(forward.x, forward.y);        
+        float pitch = std::asin(std::clamp(-forward.z, -1.0f, 1.0f));
+        float roll = 0.0f; // Roll is not computed
+        
+        return RE::NiPoint3{pitch, roll, yaw};
+    }	
 
 /******************************************************************************************/
 
