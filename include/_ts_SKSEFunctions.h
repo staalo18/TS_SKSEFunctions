@@ -409,4 +409,34 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 			std::apply(a_func, args);
 		});
 	}
+
+	/******************************************************************************************/
+	// Below function is authored by Merdiano
+	// https://github.com/Meridiano/SkyrimDLL/blob/d9ecea0524b4fd7cd1ec560ab628c9517cba57c6/GetIniConsoleFix/src/main.cpp#L2
+	// All credits go to the original author Meridiano!
+
+	template<typename Func>
+	auto WriteFunctionHook(REL::VariantID id, std::size_t copyCount, Func destination) {
+		const auto target = REL::Relocation(id).address();
+		auto& trampoline = SKSE::GetTrampoline();
+
+		struct XPatch: Xbyak::CodeGenerator {
+			using ull = unsigned long long;
+			using uch = unsigned char;
+			uch workspace[64];
+			XPatch(std::uintptr_t baseAddress, ull bytesCount): Xbyak::CodeGenerator(bytesCount + 14, workspace) {
+				auto bytePtr = reinterpret_cast<uch*>(baseAddress);
+				for (ull i = 0; i < bytesCount; i++) db(*bytePtr++);
+				jmp(qword[rip]);
+				dq(ull(bytePtr));
+			}
+		};
+		XPatch patch(target, copyCount);
+		patch.ready();
+		auto patchSize = patch.getSize();
+		trampoline.write_branch<5>(target, destination);
+		auto alloc = trampoline.allocate(patchSize);
+		std::memcpy(alloc, patch.getCode(), patchSize);
+		return reinterpret_cast<std::uintptr_t>(alloc);
+	}
 }
