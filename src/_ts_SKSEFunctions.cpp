@@ -930,7 +930,33 @@ namespace _ts_SKSEFunctions {
 
         float yaw = std::atan2(forward.x, forward.y);        
         float pitch = std::asin(std::clamp(-forward.z, -1.0f, 1.0f));
-        float roll = 0.0f; // Roll is not computed
+        
+        // Compute roll from the up vector's deviation from world up
+        // Project the up vector onto the plane perpendicular to forward
+        // Then measure its rotation relative to the expected "up" direction
+        float cosPitch = std::cos(pitch);
+        float sinPitch = std::sin(pitch);
+        float cosYaw = std::cos(yaw);
+        float sinYaw = std::sin(yaw);
+        
+        // Expected up vector (world +Z rotated by pitch and yaw only, zero roll)
+        RE::NiPoint3 expectedUp(
+            -sinPitch * sinYaw,
+            -sinPitch * cosYaw,
+            cosPitch
+        );
+        
+        // Expected right vector (perpendicular to both forward and expectedUp)
+        RE::NiPoint3 expectedRight(
+            cosYaw,
+            -sinYaw,
+            0.0f
+        );
+        
+        // Project actual up vector onto the expectedUp and expectedRight to get roll angle
+        float upDotExpectedUp = up.Dot(expectedUp);
+        float upDotExpectedRight = up.Dot(expectedRight);
+        float roll = -std::atan2(upDotExpectedRight, upDotExpectedUp);
         
         return RE::NiPoint3{pitch, roll, yaw};
     }	
@@ -1322,7 +1348,84 @@ namespace _ts_SKSEFunctions {
                 selectedActor = actor;
             }
         }
+/*
+// Experimentation for using Havok raycast against actual collision geometry:
+// A single raycast would be sufficient to determine if the crosshair is intersecting an actor's collision mesh.
+// Status: Basic raycast working, but actor extraction from hit result needs implementation
+        auto* playerCamera = RE::PlayerCamera::GetSingleton();
+        if (!playerCamera) {
+            return nullptr;
+        }
+		auto cameraPos = playerCamera->cameraRoot->world.translate;
+        auto playerPos = playerActor->GetPosition();
+        const auto& worldTransform = playerCamera->cameraRoot->world;
+        
+        // The forward vector is the third column of the rotation matrix
+        RE::NiPoint3 cameraForward = worldTransform.rotate * RE::NiPoint3{ 0.0f, 1.0f, 0.0f };
+        cameraForward.Unitize();
+        // Access Havok world through player's parent cell
+        auto* cell = playerActor->GetParentCell();
+log::info("{}: Player cell",__FUNCTION__);
+        if (cell) {
+            auto* bhkWorld = cell->GetbhkWorld();
+            if (bhkWorld) {
+log::info("{}: bhkWorld",__FUNCTION__);
+                auto* hkpWorld = bhkWorld->GetWorld1();
+                if (hkpWorld) {
+log::info("{}: hkpWorld",__FUNCTION__);
+                    // Set up raycast input
+                    float rayLength = 10000.0f;
+                    RE::NiPoint3 rayEnd = cameraPos + (cameraForward * rayLength);
 
+                    RE::hkpWorldRayCastInput rayCastInput;
+                    rayCastInput.from = RE::hkVector4(cameraPos.x, cameraPos.y, cameraPos.z, 0.0f);
+                    rayCastInput.to = RE::hkVector4(rayEnd.x, rayEnd.y, rayEnd.z, 0.0f);
+                    rayCastInput.enableShapeCollectionFilter = false;
+                    rayCastInput.filterInfo = 0;  // No collision layer filtering for now
+
+                    RE::hkpWorldRayCastOutput rayCastOutput;
+                    rayCastOutput.Reset();
+
+                    // Perform the raycast
+                    hkpWorld->CastRay(rayCastInput, rayCastOutput);
+
+                    // Check if we hit something
+                    if (rayCastOutput.HasHit()) {
+log::info("{}: Raycast hit something",__FUNCTION__);
+// At this time HasHit never returns true, even when the crosshair definitely is over actors in the game world.
+
+                        // Get the NiAVObject directly from the collidable's user data
+                        if (rayCastOutput.rootCollidable) {
+                            void* userData = rayCastOutput.rootCollidable->GetOwner();
+                            if (userData) {
+                                // Cast to NiAVObject
+                                auto* node = reinterpret_cast<RE::NiAVObject*>(userData);
+                                
+                                // Walk up the scene graph to find the actor
+                                RE::NiNode* current = node->AsNode();
+                                if (!current) {
+                                    current = node->parent;
+                                }
+                                
+                                while (current) {
+                                    void* refData = current->GetUserData();
+                                    if (refData) {
+                                        auto* ref = reinterpret_cast<RE::TESObjectREFR*>(refData);
+                                        auto* hitActor = ref->As<RE::Actor>();
+                                        if (hitActor) {
+                                            selectedActor = hitActor;
+                                            break;
+                                        }
+                                    }
+                                    current = current->parent;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+*/
         return selectedActor;
     }
 

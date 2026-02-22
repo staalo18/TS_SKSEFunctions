@@ -415,6 +415,8 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 	// https://github.com/Meridiano/SkyrimDLL/blob/d9ecea0524b4fd7cd1ec560ab628c9517cba57c6/GetIniConsoleFix/src/main.cpp#L2
 	// All credits go to the original author Meridiano!
 
+	// NOTE: This function requires allocation of tramponine memory via SKSE::AllocTrampoline() in the consuming plugin code!
+	
 	template<typename Func>
 	auto WriteFunctionHook(REL::VariantID id, std::size_t copyCount, Func destination) {
 		const auto target = REL::Relocation(id).address();
