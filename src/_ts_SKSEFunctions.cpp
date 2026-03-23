@@ -462,13 +462,21 @@ namespace _ts_SKSEFunctions {
 
 	float GetLandHeight(float a_x, float a_y, float a_z)
 	{
-		/* Only works in for coords wich lie in cells that are currently attached. Otherwise returns height -2048.0*/
-		/* This code is copied from PO3_SKSEFunctions, because the function is not accessible via the released Papyrus Extender version*/
+		// This function is based on code in PO3_SKSEFunctions
 		float heightOut = -1;
 
 		if (auto TES = RE::TES::GetSingleton()) {
 			RE::NiPoint3 pos(a_x, a_y, a_z);
-			TES->GetLandHeight(pos, heightOut);
+
+			auto* worldspace = TES->GetRuntimeData2().worldSpace;
+			if (!worldspace) {
+				log::error("{}: WorldSpace not available", __FUNCTION__);
+				return heightOut;
+			}
+			// get cell to ensure it's loaded, otherwise GetLandHeight returns -2048.0
+			bool success = false;
+			auto cell = GetCell(pos, worldspace, success);
+			success = worldspace->GetMaxHeightAt(pos, heightOut);
 		}
 
 		spdlog::info("_ts_SKSEFunctions - {}: height: {}", __func__, heightOut);
@@ -479,14 +487,20 @@ namespace _ts_SKSEFunctions {
 
 	float GetLandHeightWithWater(RE::TESObjectREFR* a_ref)
 	{
-		/* Not yet tested: possibly only works in for coords wich lie in cells that are currently attached? Otherwise returns height -2048.0*/
 
 		float heightOut = -1;
 
 		if (auto TES = RE::TES::GetSingleton()) {
-			TES->GetLandHeight(a_ref->GetPosition(), heightOut);
-	
-			auto cell = a_ref->GetParentCell();
+			auto* worldspace = TES->GetRuntimeData2().worldSpace;
+			if (!worldspace) {
+				log::error("{}: WorldSpace not available", __FUNCTION__);
+				return heightOut;
+			}
+			bool success = false;
+			auto pos = a_ref->GetPosition();
+			auto* cell = GetCell(pos, worldspace, success);
+			success = worldspace->GetMaxHeightAt(pos, heightOut);
+
 			auto waterHeight = !cell || cell == a_ref->parentCell ? a_ref->GetWaterHeight() : cell->GetExteriorWaterHeight();
 
 			if (waterHeight == -FLT_MAX && cell) {
@@ -505,14 +519,21 @@ namespace _ts_SKSEFunctions {
 
 	float GetLandHeightWithWater(RE::NiPoint3& a_pos)
 	{
-		/* Not yet tested: possibly only works in for coords wich lie in cells that are currently attached? Otherwise returns height -2048.0*/
 		float heightOut = -1;
 
 		if (auto TES = RE::TES::GetSingleton()) {
-			TES->GetLandHeight(a_pos, heightOut);
-	
-            auto* cell = TES->GetCell(a_pos);
-            if (!cell) {
+			auto* worldspace = TES->GetRuntimeData2().worldSpace;
+			if (!worldspace) {
+				log::error("{}: WorldSpace not available", __FUNCTION__);
+				return heightOut;
+			}
+			bool success = false;
+			auto* cell = GetCell(a_pos, worldspace, success);
+			success = worldspace->GetMaxHeightAt(a_pos, heightOut);
+//			TES->GetLandHeight(a_pos, heightOut);
+
+//			auto* cell = TES->GetCell(a_pos);
+			if (!cell) {
                 log::warn("{}: Cell not found for position ({}, {}, {})", __FUNCTION__, a_pos.x, a_pos.y, a_pos.z);
                 return heightOut;
             }
@@ -1492,4 +1513,231 @@ spdlog::info("_ts_SKSEFunctions - {}: First selected actor {}: angle = {}, dista
 
         return selectedActor;
     }
+
+/******************************************************************************************/
+
+	// These functions are authored by SkyHorizon
+	// https://www.nexusmods.com/profile/SkyHorizon3
+	// All credits go to them!
+
+	inline void TES_CancelMasterFileLoads(RE::TES* tes) {
+		using func_t = decltype(&TES_CancelMasterFileLoads);
+		static REL::Relocation<func_t> func{ RELOCATION_ID(13188, 13333) };
+		func(tes);
+	}
+
+	inline void TES_ResumeMasterFileLoads(RE::TES* tes) {
+		using func_t = decltype(&TES_ResumeMasterFileLoads);
+		static REL::Relocation<func_t> func{ RELOCATION_ID(13189, 13334) };
+		func(tes);
+	}
+
+	inline RE::TESObjectCELL* TESWorldSpace_LoadCell(RE::TESWorldSpace* ws, std::int16_t x, std::int16_t y) {
+		using func_t = decltype(&TESWorldSpace_LoadCell);
+		static REL::Relocation<func_t> func{ RELOCATION_ID(20026, 20460) };
+		return func(ws, x, y);
+	}
+    
+    RE::TESObjectCELL* GetCell(RE::NiPoint3& a_position, RE::TESWorldSpace* a_worldspace, bool& a_loadedFromDisk) {
+        
+        constexpr float CELL_SIZE = 4096.0f;
+
+        // Calculate cell coordinates from position
+        std::int16_t cellX = static_cast<std::int16_t>(std::floor(a_position.x / CELL_SIZE));
+        std::int16_t cellY = static_cast<std::int16_t>(std::floor(a_position.y / CELL_SIZE));
+		return GetCell(cellX, cellY, a_worldspace, a_loadedFromDisk);
+    }
+
+    RE::TESObjectCELL* GetCell(std::int16_t a_cellX, std::int16_t a_cellY, RE::TESWorldSpace* a_worldspace, bool& a_loadedFromDisk) {
+        RE::TESObjectCELL* cell = nullptr;
+        a_loadedFromDisk = false;
+        
+        auto* tes = RE::TES::GetSingleton();
+        if (!tes) {
+            log::warn("{}: Cannot access TES singleton", __FUNCTION__);
+            return nullptr;
+        }
+
+        if (!a_worldspace) {
+            log::warn("{}: Worldspace parameter is null", __FUNCTION__);
+            return nullptr;
+        }
+        RE::CellID cellID(a_cellY, a_cellX);
+        const auto& map = a_worldspace->cellMap;
+        const auto it = map.find(cellID);
+        if (it != map.end()) {
+            cell = it->second;
+        }
+        // If not in map, load it using TESWorldSpace_LoadCell
+        if (!cell) {
+            TES_CancelMasterFileLoads(tes);
+            cell = TESWorldSpace_LoadCell(a_worldspace, a_cellX, a_cellY);
+            TES_ResumeMasterFileLoads(tes);
+            a_loadedFromDisk = true;
+        }
+
+        return cell;
+    }
+
+	void LoadCellGrid(std::int16_t a_centerCellX, std::int16_t a_centerCellY, RE::TESWorldSpace* a_worldspace, int a_sizeX, int a_sizeY) {
+        auto* tes = RE::TES::GetSingleton();
+        if (!tes) {
+            log::warn("{}: Cannot access TES singleton", __FUNCTION__);
+            return;
+        }
+        
+        const auto& map = a_worldspace->cellMap;
+        RE::TESObjectCELL* cell = nullptr;
+
+		TES_CancelMasterFileLoads(tes);
+		
+		// Load target cell
+		cell = TESWorldSpace_LoadCell(a_worldspace, a_centerCellX, a_centerCellY);
+		
+		// Pre-load surrounding 5x5 grid to minimize SetCenter work
+		log::info("{}: Pre-loading 5x5 grid around target cell", __FUNCTION__);
+		int loadedCount = 0;
+		for (int dx = -a_sizeX; dx <= a_sizeX; dx++) {
+			for (int dy = -a_sizeY; dy <= a_sizeY; dy++) {
+				if (dx == 0 && dy == 0) continue; // Already loaded target
+				
+				std::int16_t gridX = a_centerCellX + dx;
+				std::int16_t gridY = a_centerCellY + dy;
+				RE::CellID neighborID(gridY, gridX);
+				
+				// Check if already in cellMap
+				if (map.find(neighborID) == map.end()) {
+					auto* neighborCell = TESWorldSpace_LoadCell(a_worldspace, gridX, gridY);
+					if (neighborCell) {
+						loadedCount++;
+					}
+				}
+			}
+		}
+		
+		TES_ResumeMasterFileLoads(tes);
+	}
+
+/******************************************************************************************/
+	void UpdateTESGridCells(std::int32_t a_centerX, std::int32_t a_centerY)
+	{
+		auto* tes = RE::TES::GetSingleton();
+		if (!tes) {
+			log::error("{}: Cannot access TES", __FUNCTION__);
+			return;
+		}
+		
+		auto* gridCells = tes->gridCells;
+		if (!gridCells) {
+			log::error("{}: GridCells not available", __FUNCTION__);
+			return;
+		}
+		
+		UpdateTESGridCells(gridCells, a_centerX, a_centerY);
+	}
+
+	void UpdateTESGridCells(RE::GridCellArray* a_gridCells, std::int32_t a_centerX, std::int32_t a_centerY)
+	{
+		auto perfStart = std::chrono::high_resolution_clock::now();
+		
+		auto* tes = RE::TES::GetSingleton();
+		if (!tes) {
+			log::error("{}: Cannot access TES", __FUNCTION__);
+			return;
+		}
+		
+		auto* gridCells = tes->gridCells;
+		if (!gridCells) {
+			log::error("{}: GridCells not available", __FUNCTION__);
+			return;
+		}
+		
+		auto* worldspace = tes->GetRuntimeData2().worldSpace;
+		if (!worldspace) {
+			log::error("{}: Cannot access worldspace", __FUNCTION__);
+			return;
+		}
+		
+		log::info("{}: Manually updating GridCells to center ({}, {})", __FUNCTION__, a_centerX, a_centerY);
+		
+		constexpr float CELL_SIZE = 4096.0f;
+		const std::uint32_t gridSize = gridCells->length; // Should be 5
+		const std::int32_t halfGrid = gridSize / 2;       // Should be 2
+		
+		// Update world center position
+		gridCells->worldCenter.x = static_cast<float>(a_centerX * CELL_SIZE);
+		gridCells->worldCenter.y = static_cast<float>(a_centerY * CELL_SIZE);
+		gridCells->worldCenter.z = GetLandHeight(gridCells->worldCenter.x, gridCells->worldCenter.y, 0.0f);
+		
+		log::info("{}: Updated world center to ({:.1f}, {:.1f}, {:.1f})", 
+				__FUNCTION__, gridCells->worldCenter.x, gridCells->worldCenter.y, gridCells->worldCenter.z);
+		
+		// Load and populate all 25 cells in the 5x5 grid
+		int loadedCount = 0;
+		int alreadyLoadedCount = 0;
+		int failedCount = 0;
+		
+		auto loadStart = std::chrono::high_resolution_clock::now();
+		
+		for (std::uint32_t gridX = 0; gridX < gridSize; gridX++) {
+			for (std::uint32_t gridY = 0; gridY < gridSize; gridY++) {
+				// Calculate world cell coordinates for this grid position
+				std::int32_t worldCellX = a_centerX - halfGrid + gridX;
+				std::int32_t worldCellY = a_centerY - halfGrid + gridY;
+				
+				// Load cell (from disk if needed)
+				bool loadedFromDisk = false;
+				RE::TESObjectCELL* cell = _ts_SKSEFunctions::GetCell(worldCellX, worldCellY, worldspace, loadedFromDisk);
+				
+				if (cell) {
+					// Calculate array index: cells[(x * length) + y]
+					std::uint32_t arrayIndex = (gridX * gridSize) + gridY;
+					gridCells->cells[arrayIndex] = cell;
+					
+					if (loadedFromDisk) {
+						loadedCount++;
+					} else {
+						alreadyLoadedCount++;
+					}
+				} else {
+					failedCount++;
+					log::warn("{}: Failed to load cell ({}, {})", __FUNCTION__, worldCellX, worldCellY);
+				}
+			}
+		}
+		
+		auto loadEnd = std::chrono::high_resolution_clock::now();
+		auto loadDuration = std::chrono::duration_cast<std::chrono::microseconds>(loadEnd - loadStart).count();
+		
+		// Update land3D attachment flag (set to false initially, engine will attach later)
+		gridCells->land3DAttached = false;
+		
+		// Update TES currentGrid coordinates
+		tes->currentGridX = a_centerX;
+		tes->currentGridY = a_centerY;
+		
+		log::info("{}: Grid population complete: {} newly loaded, {} already loaded, {} failed", 
+				__FUNCTION__, loadedCount, alreadyLoadedCount, failedCount);
+		log::info("{}: Cell loading took {:.3f} ms", __FUNCTION__, loadDuration / 1000.0);
+		
+		// Verify center cell
+		auto* centerCell = gridCells->GetCell(halfGrid, halfGrid); // Should be [2,2]
+		if (centerCell) {
+			auto* coords = centerCell->GetCoordinates();
+			if (coords) {
+				log::info("{}: Verified center cell at Grid[{},{}] = Cell({},{})", 
+						__FUNCTION__, halfGrid, halfGrid, coords->cellX, coords->cellY);
+			}
+		} else {
+			log::error("{}: Center cell verification FAILED - GetCell({},{}) returned nullptr", 
+					__FUNCTION__, halfGrid, halfGrid);
+		}
+		
+		auto perfEnd = std::chrono::high_resolution_clock::now();
+		auto totalDuration = std::chrono::duration_cast<std::chrono::microseconds>(perfEnd - perfStart).count();
+		log::info("{}: TOTAL UpdateTESGridCells took {:.3f} ms", __FUNCTION__, totalDuration / 1000.0);
+	}
+
+/******************************************************************************************/
+
 }

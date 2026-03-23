@@ -147,6 +147,27 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 	// Note: this function also finds actors that are occluded from sight (eg behind walls)
 	RE::Actor* GetCrosshairTarget(float a_maxTargetDistance = 0.0f, float a_maxTargetScanAngle = 7.0f, std::vector<RE::Actor*> a_excludeActors = {});
 
+
+	// Gets the cell at the given world coordinates. 
+	// If the cell is not loaded, it will be loaded from disk and a_loadedFromDisk will be set to true. 
+	// If the cell is already loaded, a_loadedFromDisk will be set to false.
+    RE::TESObjectCELL* GetCell(RE::NiPoint3& a_position, RE::TESWorldSpace* a_worldspace, bool& a_loadedFromDisk);
+
+	// Gets the cell at the given world cell index. 
+	// If the cell is not loaded, it will be loaded from disk and a_loadedFromDisk will be set to true. 
+	// If the cell is already loaded, a_loadedFromDisk will be set to false.
+    RE::TESObjectCELL* GetCell(std::int16_t a_cellX, std::int16_t a_cellY, RE::TESWorldSpace* a_worldspace, bool& a_loadedFromDisk);
+
+	// Loads a grid of cells around the given center cell index into the worldspace's memory (worldspace->cellMap).
+	// The grid size is the number of cells to load in each direction from the center cell 
+	// (eg sizeX=2 will load a 5x5 grid of cells).
+	void LoadCellGrid(std::int16_t a_centerCellX, std::int16_t a_centerCellY, RE::TESWorldSpace* a_worldspace, int a_sizeX = 2, int a_sizeY = 2);
+
+	// Manually updates the TESGridCells structure to set the center cell to the given world cell coordinates,
+	// and populates the 5x5 grid of cells around it.
+	void UpdateTESGridCells(std::int32_t a_centerX, std::int32_t a_centerY);
+	void UpdateTESGridCells(RE::GridCellArray* a_gridCells, std::int32_t a_centerX, std::int32_t a_centerY);
+	
 	// gets all target points from the actor's 3D
 	std::vector<RE::NiPointer<RE::NiAVObject>> GetAllTargetPoints(RE::Actor* a_actor);
 
