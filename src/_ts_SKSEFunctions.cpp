@@ -517,7 +517,7 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
-	float GetLandHeightWithWater(RE::NiPoint3& a_pos)
+	float GetLandHeightWithWater(RE::NiPoint3& a_pos, bool a_useMaxHeight)
 	{
 		float heightOut = -1;
 
@@ -529,8 +529,15 @@ namespace _ts_SKSEFunctions {
 			}
 			bool success = false;
 			auto* cell = GetCell(a_pos, worldspace, success);
-			success = worldspace->GetMaxHeightAt(a_pos, heightOut);
-//			TES->GetLandHeight(a_pos, heightOut);
+			if (a_useMaxHeight) {
+				success = worldspace->GetMaxHeightAt(a_pos, heightOut);
+			} else {
+				TES->GetLandHeight(a_pos, heightOut);
+
+				if (heightOut == -2048.0f) {
+					success = worldspace->GetMaxHeightAt(a_pos, heightOut);
+				}
+			}
 
 //			auto* cell = TES->GetCell(a_pos);
 			if (!cell) {

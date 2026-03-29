@@ -61,7 +61,7 @@ namespace _ts_SKSEFunctions {
 
     float GetLandHeightWithWater(RE::TESObjectREFR* a_ref);
 
-	float GetLandHeightWithWater(RE::NiPoint3& a_pos);
+	float GetLandHeightWithWater(RE::NiPoint3& a_pos, bool a_useMaxHeight = false);
 
     bool ClearCombatTargets(RE::Actor* a_actor);
 
