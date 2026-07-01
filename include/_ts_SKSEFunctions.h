@@ -460,6 +460,21 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 		trampoline.write_branch<5>(target, destination);
 		auto alloc = trampoline.allocate(patchSize);
 		std::memcpy(alloc, patch.getCode(), patchSize);
+
+		if (copyCount >= 5) {
+			auto* tb = static_cast<std::uint8_t*>(alloc);
+			if (tb[0] == 0xE9 || tb[0] == 0xE8) {
+				const auto relOff   = *reinterpret_cast<const std::int32_t*>(tb + 1);
+				const auto trueDest = target + 5 +
+					static_cast<std::uintptr_t>(static_cast<std::intptr_t>(relOff));
+				const auto newRel   = static_cast<std::int32_t>(
+					static_cast<std::intptr_t>(trueDest) -
+					static_cast<std::intptr_t>(reinterpret_cast<std::uintptr_t>(tb) + 5));
+				std::memcpy(tb + 1, &newRel, sizeof(newRel));
+spdlog::info("_ts_SKSEFunctions::WriteFunctionHook: prior hook at 0x{:X}; "
+"trampoline JMP/CALL fixed up (trueDest=0x{:X})", target, trueDest);
+			}
+		}		
 		return reinterpret_cast<std::uintptr_t>(alloc);
 	}
 }

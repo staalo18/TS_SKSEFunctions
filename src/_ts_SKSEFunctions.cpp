@@ -1665,7 +1665,7 @@ spdlog::info("_ts_SKSEFunctions - {}: First selected actor {}: angle = {}, dista
 			return;
 		}
 		
-		log::info("{}: Manually updating GridCells to center ({}, {})", __FUNCTION__, a_centerX, a_centerY);
+		log::info("{}: Manually updating GridCells to center ({}, {}), worldspace {}", __FUNCTION__, a_centerX, a_centerY, worldspace ? worldspace->GetFullName() : "nullptr");
 		
 		constexpr float CELL_SIZE = 4096.0f;
 		const std::uint32_t gridSize = gridCells->length; // Should be 5
