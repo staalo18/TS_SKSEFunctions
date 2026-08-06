@@ -171,6 +171,11 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 	// gets all target points from the actor's 3D
 	std::vector<RE::NiPointer<RE::NiAVObject>> GetAllTargetPoints(RE::Actor* a_actor);
 
+	// Checks if the given position is on (ie above / below) navmesh. 
+	// If a_skipWater is true, navmesh triangles below the water height will be ignored.
+	// Loads cells as required to obtain navmesh data.
+	bool HasNavmesh(RE::NiPoint3 a_searchPos, bool a_ignoreUnderwaterTriangles);
+
 	// call a global papyrus function from C++
     template <class ... Args>
 	bool CallPapyrusFunction(std::string_view a_functionClass, std::string_view a_function, Args... a_args) {

@@ -1747,4 +1747,87 @@ spdlog::info("_ts_SKSEFunctions - {}: First selected actor {}: angle = {}, dista
 
 /******************************************************************************************/
 
+	float TriangleSign(RE::NiPoint2 p1, RE::NiPoint2 p2, RE::NiPoint2 p3)
+	{
+		// thanks to vituha for this function
+		return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+	}
+
+/******************************************************************************************/
+
+	bool PointInTriangle(RE::NiPoint2 pt, RE::NiPoint2 v1, RE::NiPoint2 v2, RE::NiPoint2 v3)
+	{
+		// thanks to vituha for this function
+		float d1, d2, d3;
+		bool has_neg, has_pos;
+
+		d1 = TriangleSign(pt, v1, v2);
+		d2 = TriangleSign(pt, v2, v3);
+		d3 = TriangleSign(pt, v3, v1);
+
+		has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+		has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+		return !(has_neg && has_pos);
+	}
+
+/******************************************************************************************/
+
+	bool HasNavmesh(RE::NiPoint3 a_searchPos, bool a_ignoreUnderwaterTriangles)
+	{	
+		bool loadedFromDisk = false;
+		auto worldspace = RE::PlayerCharacter::GetSingleton()->GetWorldspace();
+		auto* cell = _ts_SKSEFunctions::GetCell(a_searchPos, worldspace, loadedFromDisk);
+
+		if (cell) {
+			float waterHeight = cell->GetExteriorWaterHeight();
+
+			// thanks to vituha for providing the navmesh triangle search code snippet
+			auto navMeshes = cell->GetRuntimeData().navMeshes;
+			if (navMeshes)
+			{
+				RE::BSTArray<RE::BSTSmartPointer<RE::NavMesh>>* navMeshBSArray = &navMeshes->navMeshes;
+
+				for (auto& navmesh : *navMeshBSArray)
+				{
+					if (navmesh)
+					{
+						auto vertices = navmesh->vertices;
+						auto triangles = navmesh->triangles;
+
+						for (RE::BSNavmeshTriangle triangle : triangles)
+						{
+							auto vertexID0 = triangle.vertices[0];
+							auto vertexID1 = triangle.vertices[1];
+							auto vertexID2 = triangle.vertices[2];
+
+							auto sizeVertices = std::size(vertices);
+
+							if (vertexID0 < sizeVertices && vertexID1 < sizeVertices && vertexID2 < sizeVertices)
+							{
+								RE::BSNavmeshVertex vertex0 = vertices[vertexID0];
+								RE::BSNavmeshVertex vertex1 = vertices[vertexID1];
+								RE::BSNavmeshVertex vertex2 = vertices[vertexID2];
+
+								auto v0 = vertex0.location;
+								auto v1 = vertex1.location;
+								auto v2 = vertex2.location;
+
+								if (a_ignoreUnderwaterTriangles) {
+									if (v0.z < waterHeight || v1.z < waterHeight || v2.z < waterHeight)
+										continue;
+								}
+
+								if (PointInTriangle({ a_searchPos.x, a_searchPos.y }, { v0.x, v0.y }, { v1.x, v1.y }, { v2.x, v2.y }))
+									return true;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
 }
