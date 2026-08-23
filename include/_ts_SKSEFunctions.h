@@ -99,6 +99,8 @@ namespace _ts_SKSEFunctions {
     RE::NiPoint3 GetBodyPartRotation(RE::Actor* a_actor, RE::BGSBodyPartDefs::LIMB_ENUM a_bodyPart);
 
 	RE::NiPoint3 GetCameraRotation();
+
+	float GetRandomFloat(float a_min, float a_max);
 	
 	/******************************************************************************************/
 	// Below functions are from 'True Directional Movement':

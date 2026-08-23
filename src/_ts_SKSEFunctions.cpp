@@ -1084,6 +1084,13 @@ namespace _ts_SKSEFunctions {
 		return rotation;
 	}
 
+	float GetRandomFloat(float a_min, float a_max) {
+		static std::random_device rd;
+		static std::mt19937 gen(rd());
+		std::uniform_real_distribution<float> dis(a_min, a_max);
+		return dis(gen);
+	}
+	
 /******************************************************************************************/
 // Below functions are from 'True Directional Movement':
 // https://github.com/ersh1/TrueDirectionalMovement
