@@ -184,7 +184,7 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 		// example usage:
 		// _ts_SKSEFunctions::CallPapyrusFunction("Game"sv, "FastTravel"sv, FastTravelTarget);
 		const auto skyrimVM = RE::SkyrimVM::GetSingleton();
-		auto vm = skyrimVM ? skyrimVM->impl : nullptr;
+		auto vm = skyrimVM ? skyrimVM->GetVMRuntimeData().impl : nullptr;
 		if (vm) {
 			RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
 			auto args = RE::MakeFunctionArguments(std::forward<Args>(a_args)...);
@@ -219,7 +219,7 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 		// _ts_SKSEFunctions::CallPapyrusFunctionOn(RideQuest, "Quest", "MyPapyrusFunction", <papyrus function arg list>)
 		// _ts_SKSEFunctions::CallPapyrusFunctionOn(Player, "actor", "AnotherPapyrusFunction", <papyrus function arg list>)
 		const auto skyrimVM = RE::SkyrimVM::GetSingleton();
-		auto vm = skyrimVM ? skyrimVM->impl : nullptr;
+		auto vm = skyrimVM ? skyrimVM->GetVMRuntimeData().impl : nullptr;
 		if (vm) {
 			RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> callback;
 			auto args = RE::MakeFunctionArguments(std::forward<Args>(a_args)...);
@@ -264,7 +264,7 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 					return false;
 				}
 				break;
-			case RE::Setting::Type::kSignedInteger:
+			case RE::Setting::Type::kInteger:
 				if constexpr (std::is_same_v<T, std::int32_t>) {
 					setting->data.i = a_value;
 				} else {
@@ -272,7 +272,7 @@ static float* g_deltaTimeRealTime = (float*)RELOCATION_ID(523661, 410200).addres
 					return false;
 				}
 				break;
-			case RE::Setting::Type::kColor:
+			case RE::Setting::Type::kColorRGB:
 				if constexpr (std::is_same_v<T, RE::Color>) {
 					setting->data.r = a_value;
 				} else {

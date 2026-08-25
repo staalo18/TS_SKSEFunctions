@@ -52,7 +52,7 @@ namespace _ts_SKSEFunctions {
         }
 
         RE::VMTypeID id = static_cast<RE::VMTypeID>(a_akForm->GetFormType());
-        RE::VMHandle handle = RE::SkyrimVM::GetSingleton()->handlePolicy.GetHandleForObject(id, a_akForm);
+        RE::VMHandle handle = RE::SkyrimVM::GetSingleton()->GetVMRuntimeData().handlePolicy.GetHandleForObject(id, a_akForm);
 
         if (handle == NULL) {
             return NULL;
@@ -112,14 +112,14 @@ namespace _ts_SKSEFunctions {
 		}
 
 		updateEvent->updateType = RE::SkyrimVM::UpdateDataEvent::UpdateType::kNoRepeat;  // Single update
-		updateEvent->timeToSendEvent = skyrimVM->currentVMMenuModeTime + static_cast<std::uint32_t>(a_delayInSeconds * 1000);  // Delay in milliseconds
+		updateEvent->timeToSendEvent = skyrimVM->GetVMRuntimeData().currentVMMenuModeTime + static_cast<std::uint32_t>(a_delayInSeconds * 1000);  // Delay in milliseconds
 		updateEvent->updateTime = static_cast<std::uint32_t>(a_delayInSeconds * 1000);  // Delay in milliseconds
 		updateEvent->handle = a_handle;
 
 		// Queue the event
 		{
-			RE::BSSpinLockGuard lock(skyrimVM->queuedOnUpdateEventLock);
-			skyrimVM->queuedOnUpdateEvents.push_back(std::move(updateEvent));
+			RE::BSSpinLockGuard lock(skyrimVM->GetVMRuntimeData().queuedOnUpdateEventLock);
+			skyrimVM->GetVMRuntimeData().queuedOnUpdateEvents.push_back(std::move(updateEvent));
 		}
 	}
 	
@@ -684,7 +684,7 @@ namespace _ts_SKSEFunctions {
 /******************************************************************************************/
 
     float GetAngleBetweenVectors(const RE::NiPoint3& a, const RE::NiPoint3& b) {
-        float dotProduct = a * b;
+        float dotProduct = a.x * b.x + a.y * b.y + a.z * b.z;
         float magnitudeA = a.Length();
         float magnitudeB = b.Length();
         if (magnitudeA == 0 || magnitudeB == 0) {
