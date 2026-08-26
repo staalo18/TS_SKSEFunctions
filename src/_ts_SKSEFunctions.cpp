@@ -38,7 +38,7 @@ namespace _ts_SKSEFunctions {
 		auto* main = RE::Main::GetSingleton();
 
 		while (ui && (ui->GameIsPaused() || ui->IsMenuOpen(RE::Console::MENU_NAME)) ||
-		(main && !main->gameActive)) {
+		(main && !main->GetRuntimeData().gameActive)) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(a_checkInterval_ms));
 		}
 	}
@@ -563,17 +563,11 @@ namespace _ts_SKSEFunctions {
 			return false;
 		}
 
-		auto combatGroup = a_actor->GetCombatGroup();
+		auto* combatGroup = a_actor->GetCombatGroup();
 		if (!combatGroup) {
 			return false;
 		}
 
-		int i = 0;
-		for (auto& targetData : combatGroup->targets) {
-			auto target = targetData.targetHandle.get();
-			i++;
-		}
-		
 		combatGroup->targets.clear();
 		a_actor->SetCombatGroup(combatGroup);
 
@@ -594,10 +588,10 @@ namespace _ts_SKSEFunctions {
 		spdlog::info("_ts_SKSEFunctions - {}", __func__);
 		int i = 0;
 		if (const auto combatGroup = a_actor->GetCombatGroup()) {
-			for (auto& memberData : combatGroup->members) {
-				auto member = memberData.memberHandle.get();
-				spdlog::info("_ts_SKSEFunctions - {}: member[{}]: {}", __func__, i, member.get()->GetFormID());	
+			for (const auto& memberData : combatGroup->members) {
+				const auto member = memberData.memberHandle.get();
 				if (member) {
+					spdlog::info("_ts_SKSEFunctions - {}: member[{}]: {}", __func__, i, member.get()->GetFormID());
 					result.push_back(member.get());
 				}
 				i++;
@@ -605,9 +599,11 @@ namespace _ts_SKSEFunctions {
 		}	
 		i = 0;
 		if (const auto combatGroup = a_actor->GetCombatGroup()) {
-			for (auto& targetData : combatGroup->targets) {
-				auto target = targetData.targetHandle.get();
-				spdlog::info("_ts_SKSEFunctions - {}: target[{}]: {}", __func__, i, target.get()->GetFormID());	
+			for (const auto& targetData : combatGroup->targets) {
+				const auto target = targetData.targetHandle.get();
+				if (target) {
+					spdlog::info("_ts_SKSEFunctions - {}: target[{}]: {}", __func__, i, target.get()->GetFormID());
+				}
 
 				i++;
 			}
@@ -623,10 +619,10 @@ namespace _ts_SKSEFunctions {
 			return nullptr;
 		}
 
-		auto targetHandle = a_actor->GetActorRuntimeData().currentCombatTarget;
+		const auto& targetHandle = a_actor->GetActorRuntimeData().currentCombatTarget;
         RE::Actor* target = nullptr;
         if (targetHandle) {
-			auto targetPtr = targetHandle.get();
+			const auto targetPtr = targetHandle.get();
 			if (targetPtr) {
 				target = targetPtr.get();
 			}
