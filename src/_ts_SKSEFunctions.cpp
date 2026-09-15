@@ -694,6 +694,17 @@ namespace _ts_SKSEFunctions {
 
 /******************************************************************************************/
 
+	float GetAngleX(const RE::NiPoint3& a_from, const RE::NiPoint3& a_to)
+	{
+		const auto x = a_to.x - a_from.x;
+		const auto y = a_to.y - a_from.y;
+		const auto z = a_to.z - a_from.z;
+		const auto deltaXY = std::sqrt(x * x + y * y);
+		return atan2(z, deltaXY);
+	}
+
+/******************************************************************************************/
+
 	float GetAngleZ(const RE::NiPoint3& a_from, const RE::NiPoint3& a_to)
 	{
 		const auto x = a_to.x - a_from.x;

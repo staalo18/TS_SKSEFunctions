@@ -78,6 +78,8 @@ namespace _ts_SKSEFunctions {
 
 	float GetCameraPitch();
 	
+	float GetAngleX(const RE::NiPoint3& a_from, const RE::NiPoint3& a_to);
+
 	float GetAngleZ(const RE::NiPoint3& a_from, const RE::NiPoint3& a_to);
 
 	[[nodiscard]] inline float GetYaw(const RE::NiQuaternion a_rotation)
